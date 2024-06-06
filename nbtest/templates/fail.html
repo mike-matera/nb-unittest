@@ -1,0 +1,7 @@
+Tests have failed:
+
+<ul>
+{% for item in result.failures + result.errors %}
+    <li><b>{{ item[0] }}</b><br>{{ item[1] }}
+{% endfor %}
+</ul>
