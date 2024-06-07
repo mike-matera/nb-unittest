@@ -1,1 +1,10 @@
-The name {{ error }} does not exist. Have you run all cells?
+{% import 'macros.html' as macros %}
+
+{% extends "base.html" %}
+{% block result %}
+{{ macros.error('Solution not found.') }}
+{% endblock %}
+
+{% block details %}
+The attribute {{ error }} is missing. Have you run all cells?
+{% endblock %}

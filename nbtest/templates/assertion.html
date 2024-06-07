@@ -1,1 +1,10 @@
-The assertion failed: {{ error }}
+{% import 'macros.html' as macros %}
+
+{% extends "base.html" %}
+{% block result %}
+{{ macros.error('Assertion failure.') }}
+{% endblock %}
+
+{% block details %}
+{{ error }}
+{% endblock %}
