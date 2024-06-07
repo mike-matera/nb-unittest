@@ -10,13 +10,8 @@ import unittest
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
-from jinja2 import Environment, PackageLoader, select_autoescape
 
-env = Environment(loader=PackageLoader("nbtest"), autoescape=select_autoescape())
-assertion_template = env.get_template("assertion.html")
-fail_template = env.get_template("fail.html")
-missing_template = env.get_template("missing.html")
-pass_template = env.get_template("pass.html")
+from .templ import templ
 
 
 @magics_class
@@ -46,14 +41,14 @@ class TestCache(Magics):
                     self._test_ns[symbol] = self.shell.user_ns[symbol]
         except KeyError as e:
             # return HTML(f"The name {e} wasn't found. Have you run all cells?")
-            return HTML(missing_template.render(error=e))
+            return HTML(templ.missing.render(error=e))
 
         # Run the cell
         try:
             tree = ast.parse(cell)
             exec(compile(tree, filename="<testcell>", mode="exec"), self._test_ns)
         except AssertionError as e:
-            return HTML(assertion_template.render(error=e))
+            return HTML(templ.assertion.render(error=e))
 
         # Find and execute test cases.
         suite = unittest.TestSuite()
@@ -81,9 +76,9 @@ class TestCache(Magics):
         runner = unittest.TextTestRunner(stream=str)
         result = runner.run(suite)
         if result.wasSuccessful():
-            return HTML(pass_template.render(result=result))
+            return HTML(templ.ok.render(result=result))
         else:
-            return HTML(fail_template.render(result=result))
+            return HTML(templ.fail.render(result=result))
 
     def post_run_cell(self, result):
         """
