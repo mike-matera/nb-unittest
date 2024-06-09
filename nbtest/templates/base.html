@@ -1,11 +1,12 @@
 <style>
-    svg {
-      width: 30px;
-      display: inline;
+    div.feedback div.mark {
+      display: inline-block; 
+      vertical-align: middle;
+      width: 50px;
       margin: 10px auto 0;
     }
     
-    .path {
+    div.feedback svg .path {
       stroke-dasharray: 1000;
       stroke-dashoffset: 0;
       &.circle {
@@ -24,14 +25,18 @@
       }
     }
     
-    p {
+    div.success {
       font-size: 1.25em;
-      &.success {
-        color: #73AF55;
-      }
-      &.error {
-        color: #D06079;
-      }
+      color: #73AF55;
+      vertical-align: middle;
+      font-weight: bold;
+    }
+    
+    div.error {
+      font-size: 1.25em;
+      color: #D06079;
+      vertical-align: middle;
+      font-weight: bold;
     }
     
     
@@ -70,7 +75,6 @@
         stroke-dashoffset: 900;
       }
     }
-    
 </style>
     
 <div>
