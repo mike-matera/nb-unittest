@@ -40,7 +40,6 @@ class TestCache(Magics):
                 else:
                     self._test_ns[symbol] = self.shell.user_ns[symbol]
         except KeyError as e:
-            # return HTML(f"The name {e} wasn't found. Have you run all cells?")
             return HTML(templ.missing.render(error=e))
 
         # Run the cell
@@ -84,12 +83,14 @@ class TestCache(Magics):
         """
         Callback after a cell has run.
         """
-        entry = _CacheEntry(result, self.shell)
-        for tag in entry.tags:
-            self._cache[tag] = entry
+        if result.execution_count is not None:
+            # Avoid caching on run().
+            entry = CacheEntry(result, self.shell)
+            for tag in entry.tags:
+                self._cache[tag] = entry
 
 
-class _CacheEntry:
+class CacheEntry:
     """
     Information about an executed cell.
     """
