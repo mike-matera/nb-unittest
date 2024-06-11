@@ -2,14 +2,10 @@
 
 {% extends "base.html" %}
 {% block result %}
-{{ macros.error('Test failure.') }}
+{{ macros.error('Problems detected.') }}
 {% endblock %}
 
 {% block details %}
-<ul>
-    {% for item in result.failures + result.errors %}
-        <li><b>{{ item[0] }}</b><br>{{ item[1] }}
-    {% endfor %}
-</ul>
+{{ macros.results(result) }}
 {% endblock %}
 

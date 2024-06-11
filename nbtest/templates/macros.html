@@ -1,25 +1,31 @@
 {% macro ok(message="All tests passed.") -%}
-<!-- from: https://codepen.io/elevaunt/pen/JYRBzJ -->
-<div class="feedback success" style="font-size: 1.25em; color: #73AF55; vertical-align: middle; font-weight: bold;">
-    <div class="mark" style="display: inline-block; vertical-align: middle; width: 50px; margin: 10px auto 0;">
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.2 130.2">
-            <circle class="path circle" fill="none" stroke="#73AF55" stroke-width="6" stroke-miterlimit="10" cx="65.1" cy="65.1" r="62.1"/>
-            <polyline class="path check" fill="none" stroke="#73AF55" stroke-width="6" stroke-linecap="round" stroke-miterlimit="10" points="100.2,40.2 51.5,88.8 29.8,67.5 "/>
-        </svg>
-    </div>
-    {{ message }}
+<div style="font-size: large; font-weight: bold;">
+    <span style="font-size: xx-large; color: blue;">🗹</span>
+    {{ message | safe }}
 </div>
 {%- endmacro %}
 
 {% macro error(message) -%}
-<div class="feedback error" style="font-size: 1.25em; color: #D06079; vertical-align: middle; font-weight: bold;">
-    <div class="mark" style="display: inline-block; vertical-align: middle; width: 50px; margin: 10px auto 0;">
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.2 130.2">
-            <circle class="path circle" fill="none" stroke="#D06079" stroke-width="6" stroke-miterlimit="10" cx="65.1" cy="65.1" r="62.1"/>
-            <line class="path line" fill="none" stroke="#D06079" stroke-width="6" stroke-linecap="round" stroke-miterlimit="10" x1="34.4" y1="37.9" x2="95.8" y2="92.3"/>
-            <line class="path line" fill="none" stroke="#D06079" stroke-width="6" stroke-linecap="round" stroke-miterlimit="10" x1="95.8" y1="38" x2="34.4" y2="92.2"/>
-        </svg>
+<div style="font-size: large; font-weight: bold;">
+    <span style="font-size: xx-large; color: red">☒</span>
+    {{ message | safe }}
+</div>
+{%- endmacro %}
+
+{% macro results(result) -%}
+<div>
+
+{% for item in result.failures + result.errors %}
+    <div style="width: 75%; min-width: 500px; max-width: 800px; padding-left: 50px; padding-bottom: 2rem">
+        <div style="clear: both;">
+            <div style="float: left; padding: 0.25em;">
+                <span style="font-size: x-large; padding: 0.25em;">⚠️</span><span style="font-family: monospace;">{{ item[1] | safe }}</span>
+            </div>    
+        </div>
+        <div style="clear: both;">
+            <div style="float: left; vertical-align: middle; padding-top: 0.25em; padding-bottom: 1em;">{{ item[0] | safe }}</div>
+        </div>
     </div>
-    {{ message }}
+{% endfor %}
 </div>
 {%- endmacro %}

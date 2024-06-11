@@ -4,7 +4,6 @@ Tests run in a context that's protected from common student errors.
 """
 
 import ast
-import io
 import re
 import unittest
 
@@ -12,6 +11,7 @@ from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
 
 from .templ import templ
+from .unit import NotebookTestRunner
 
 
 @magics_class
@@ -71,8 +71,7 @@ class TestCache(Magics):
 
         top_test_visitor().visit(tree)
 
-        str = io.StringIO()
-        runner = unittest.TextTestRunner(stream=str)
+        runner = NotebookTestRunner()
         result = runner.run(suite)
         if result.wasSuccessful():
             return HTML(templ.ok.render(result=result))
