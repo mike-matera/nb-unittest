@@ -106,6 +106,7 @@ class TestCache(Magics):
 
             top_test_visitor().visit(tree)
 
+        # Run tests
         runner = runner_class()
         result = runner.run(suite)
         if result.wasSuccessful():

@@ -4,7 +4,7 @@ Importable test cases for nbtest
 
 import unittest
 
-from nbtest.magic import nbtest_attrs
+from nbtest.cache import nbtest_attrs
 
 
 class ImportableClass(unittest.TestCase):
