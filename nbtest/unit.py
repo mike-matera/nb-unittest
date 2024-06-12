@@ -88,8 +88,9 @@ class NotebookResult(unittest.TestResult):
         if desc is not None:
             return desc
 
-        default_message = """The test function <span style="font-family: monospace">{}()</span> reported an error. 
-            Match the message shown above to the line of code that caused the problem."""
+        default_message = (
+            """The function <span style="font-family: monospace">{}()</span> reported an error."""
+        )
         if isinstance(test, unittest.FunctionTestCase):
             return default_message.format(test.id())
         else:
