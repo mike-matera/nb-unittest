@@ -41,13 +41,20 @@ class TestCache(Magics):
 
         # Find the symbols mentioned in the cell magic
         try:
-            for symbol in (x.strip() for x in line.split()):
-                if symbol.startswith("@"):
-                    self._test_ns[symbol[1:]] = self._cache[symbol]
-                    nbtest_attrs.append(symbol[1:])
-                else:
-                    self._test_ns[symbol] = self.shell.user_ns[symbol]
-                    nbtest_attrs.append(symbol)
+            for attr, value in (
+                (
+                    x[1:],
+                    self._cache[x],
+                )
+                if x.startswith("@")
+                else (
+                    x,
+                    self.shell.user_ns[x],
+                )
+                for x in line.split()
+            ):
+                self._test_ns[attr] = value
+                nbtest_attrs.append(attr)
         except KeyError as e:
             return HTML(templ.missing.render(error=e))
 
