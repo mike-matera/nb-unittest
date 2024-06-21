@@ -6,7 +6,6 @@ Tests run in a context that's protected from common student errors.
 import ast
 import re
 import unittest
-from collections.abc import Iterable
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
@@ -14,7 +13,7 @@ from IPython.display import HTML
 from .templ import templ
 from .unit import NotebookTestRunner
 
-nbtest_attrs = []
+nbtest_attrs = {}
 runner_class = NotebookTestRunner
 
 
@@ -38,7 +37,7 @@ class TestCache(Magics):
         global nbtest_attrs
 
         self._test_ns["nbtest_cases"] = None
-        nbtest_attrs = []
+        nbtest_attrs = {}
 
         # Find the symbols mentioned in the cell magic
         try:
@@ -55,7 +54,7 @@ class TestCache(Magics):
                 for x in line.split()
             ):
                 self._test_ns[attr] = value
-                nbtest_attrs.append(attr)
+                nbtest_attrs[attr] = value
         except KeyError as e:
             return HTML(templ.missing.render(error=e))
 
@@ -71,28 +70,22 @@ class TestCache(Magics):
 
         if self._test_ns["nbtest_cases"] is not None:
             # Test cases are specified
-            def expand_testcases(cases):
-                for case in cases:
-                    if isinstance(case, type) and issubclass(case, unittest.TestCase):
-                        yield unittest.defaultTestLoader.loadTestsFromTestCase(case)
-                    elif isinstance(case, unittest.TestCase):
-                        yield case
-                    elif callable(case):
-                        yield from expand_testcases(case())
-                    elif isinstance(case, Iterable):
-                        yield from expand_testcases(case)
-                    elif isinstance(
-                        case,
-                        re.__class__,  # Couldn't figure out how to reference module class
+            for tc in self._test_ns["nbtest_cases"]:
+                match tc:
+                    case str():
+                        suite.addTest(unittest.defaultTestLoader.loadTestsFromName(tc))
+                    case _ if isinstance(tc, unittest.TestCase) or isinstance(
+                        tc, unittest.TestSuite
                     ):
-                        yield unittest.defaultTestLoader.loadTestsFromModule(case)
-                    else:
+                        suite.addTest(tc)
+                    case type() if issubclass(tc, unittest.TestCase):
+                        suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
+                    case unittest.__class__():
+                        suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
+                    case _:
                         raise ValueError(
-                            f"Invalid value in test_cases: {case}. Entries must be a unittest.TestCase class or instance, a package with test cases, or a function."
+                            f"Invalid value in test_cases: {tc}. Entries must be a sting, TestCase class or instance, a TestSuite, or a module."
                         )
-
-            for case in expand_testcases(self._test_ns["nbtest_cases"]):
-                suite.addTest(case)
 
         else:
             # Look for cases in the cell
