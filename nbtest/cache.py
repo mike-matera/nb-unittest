@@ -6,6 +6,7 @@ Tests run in a context that's protected from common student errors.
 import ast
 import re
 import unittest
+from collections.abc import Iterable
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
@@ -61,7 +62,7 @@ class TestCache(Magics):
         # Run the cell
         try:
             tree = ast.parse(cell)
-            exec(compile(tree, filename="<testcell>", mode="exec"), self._test_ns)
+            exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
         except AssertionError as e:
             return HTML(templ.assertion.render(error=e))
 
@@ -70,25 +71,28 @@ class TestCache(Magics):
 
         if self._test_ns["nbtest_cases"] is not None:
             # Test cases are specified
-            for case in self._test_ns["nbtest_cases"]:
-                if isinstance(case, type) and issubclass(case, unittest.TestCase):
-                    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(case))
-                elif callable(case):
-                    for gen_case in case():
-                        if isinstance(gen_case, type) and issubclass(gen_case, unittest.TestCase):
-                            suite.addTest(
-                                unittest.defaultTestLoader.loadTestsFromTestCase(gen_case)
-                            )
-                        elif isinstance(gen_case, unittest.TestCase):
-                            suite.addTest(gen_case)
-                elif isinstance(
-                    case, re.__class__
-                ):  # Couldn't figure out how to reference module class
-                    suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(case))
-                else:
-                    raise ValueError(
-                        f"Invalid value in test_cases: {case}. Entries must be a unittest.TestCase, a function that returns a list of TestCases or a module."
-                    )
+            def expand_testcases(cases):
+                for case in cases:
+                    if isinstance(case, type) and issubclass(case, unittest.TestCase):
+                        yield unittest.defaultTestLoader.loadTestsFromTestCase(case)
+                    elif isinstance(case, unittest.TestCase):
+                        yield case
+                    elif callable(case):
+                        yield from expand_testcases(case())
+                    elif isinstance(case, Iterable):
+                        yield from expand_testcases(case)
+                    elif isinstance(
+                        case,
+                        re.__class__,  # Couldn't figure out how to reference module class
+                    ):
+                        yield unittest.defaultTestLoader.loadTestsFromModule(case)
+                    else:
+                        raise ValueError(
+                            f"Invalid value in test_cases: {case}. Entries must be a unittest.TestCase class or instance, a package with test cases, or a function."
+                        )
+
+            for case in expand_testcases(self._test_ns["nbtest_cases"]):
+                suite.addTest(case)
 
         else:
             # Look for cases in the cell
