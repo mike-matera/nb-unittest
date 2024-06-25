@@ -5,6 +5,7 @@ Tests run in a context that's protected from common student errors.
 
 import ast
 import re
+import types
 import unittest
 
 from IPython.core.magic import Magics, cell_magic, magics_class
@@ -80,11 +81,11 @@ class TestCache(Magics):
                         suite.addTest(tc)
                     case type() if issubclass(tc, unittest.TestCase):
                         suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
-                    case unittest.__class__():
+                    case types.ModuleType():
                         suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
                     case _:
                         raise ValueError(
-                            f"Invalid value in test_cases: {tc}. Entries must be a sting, TestCase class or instance, a TestSuite, or a module."
+                            f"Invalid value in test_cases: {tc}. Entries must be a string, TestCase class or instance, a TestSuite, or a module."
                         )
 
         else:
