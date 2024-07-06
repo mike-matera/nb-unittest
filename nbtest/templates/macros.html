@@ -14,12 +14,18 @@
 
 {% macro results(result) -%}
 <div>
-
 {% for item in result.failures + result.errors %}
     <div style="width: 75%; min-width: 500px; max-width: 800px; padding-left: 50px; padding-bottom: 2rem">
         <div style="clear: both;">
             <div style="float: left; padding: 0.25em;">
-                <span style="font-size: x-large; padding: 0.25em;">⚠️</span><span style="font-family: monospace;">{{ item[1] }}</span>
+                {% if item[1].severity == "info" %}
+                    <span style="font-size: x-large; padding: 0.25em;">ℹ️</span>
+                {% elif item[1].severity == "warning" %}
+                    <span style="font-size: x-large; padding: 0.25em;">⚠️</span>
+                {% else %}
+                    <span style="font-size: x-large; padding: 0.25em;">❌</span>
+                {% endif %}
+                <span style="font-family: monospace;">{{ item[1] }}</span>
             </div>    
         </div>
         <div style="clear: both;">

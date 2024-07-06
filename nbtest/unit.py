@@ -6,7 +6,6 @@ import contextlib
 import io
 import unittest
 from types import TracebackType
-from typing import override
 
 
 class NotebookTestRunner:
@@ -24,12 +23,10 @@ class NotebookResult(unittest.TestResult):
     An implementation of unittest.TestResult
     """
 
-    @override
     def __init__(self) -> None:
         super().__init__(None, None, None)
         self.successes = []
 
-    @override
     def addError(
         self,
         test: unittest.TestCase,
@@ -42,7 +39,6 @@ class NotebookResult(unittest.TestResult):
             )
         )
 
-    @override
     def addFailure(
         self,
         test: unittest.TestCase,
@@ -55,11 +51,9 @@ class NotebookResult(unittest.TestResult):
             )
         )
 
-    @override
     def addSuccess(self, test: unittest.TestCase) -> None:
         self.successes.append(self._format_test_name(test))
 
-    @override
     def addSkip(self, test: unittest.TestCase, reason: str) -> None:
         self.skipped.append(
             (
@@ -68,7 +62,6 @@ class NotebookResult(unittest.TestResult):
             )
         )
 
-    @override
     def addExpectedFailure(
         self,
         test: unittest.TestCase,
@@ -79,7 +72,6 @@ class NotebookResult(unittest.TestResult):
             self._format_error(err),
         )
 
-    @override
     def addUnexpectedSuccess(self, test: unittest.TestCase) -> None:
         self.unexpectedSuccesses.append(self._format_test_name(test))
 

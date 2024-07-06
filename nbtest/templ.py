@@ -11,9 +11,8 @@ class _Templates:
     def __init__(self):
         self._env = Environment(loader=PackageLoader("nbtest"), autoescape=select_autoescape())
         self.assertion = "assertion.html"
-        self.fail = "fail.html"
         self.missing = "missing.html"
-        self.ok = "ok.html"
+        self.result = "result.html"
 
     def _load(self, value):
         if isinstance(value, Template):
@@ -47,12 +46,12 @@ class _Templates:
         self._missing = self._load(value)
 
     @property
-    def ok(self):
-        return self._ok
+    def result(self):
+        return self._result
 
-    @ok.setter
-    def ok(self, value):
-        self._ok = self._load(value)
+    @result.setter
+    def result(self, value):
+        self._result = self._load(value)
 
 
 # Singleton instance.

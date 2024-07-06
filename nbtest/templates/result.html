@@ -2,7 +2,11 @@
 
 {% extends "base.html" %}
 {% block result %}
-{{ macros.error('Problems detected.') }}
+{% if result.wasSuccessful() %}
+    {{ macros.ok() }}
+{% else %}
+    {{ macros.error('Problems detected.') }}
+{% endif %}
 {% endblock %}
 
 {% block details %}
