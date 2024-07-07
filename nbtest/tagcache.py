@@ -7,7 +7,6 @@ import ast
 import re
 import types
 import unittest
-import sys
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
@@ -18,8 +17,9 @@ from .unit import NotebookTestRunner
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
 
+
 @magics_class
-class CellCache(Magics):
+class TagCache(Magics):
     """
     A stateful cell magic and event handler that maintains a cache of executed
     cells that is used to run unit tests on code in different cells.
@@ -65,7 +65,7 @@ class CellCache(Magics):
             exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
         except AssertionError as e:
             return HTML(templ.assertion.render(error=e))
-        
+
         # Find and execute test cases.
         suite = unittest.TestSuite()
 
@@ -122,12 +122,12 @@ class CellCache(Magics):
         """
         if result.execution_count is not None:
             # Avoid caching on run().
-            entry = CacheEntry(result, self.shell)
+            entry = TagCacheEntry(result, self.shell)
             for tag in entry.tags:
                 self._cache[tag] = entry
 
 
-class CacheEntry:
+class TagCacheEntry:
     """
     Information about an executed cell.
     """
@@ -163,4 +163,3 @@ class CacheEntry:
     def run(self, push={}, silent=False):
         self.shell.push(push)
         return self.shell.run_cell(self.source, store_history=False, silent=silent).result
-

@@ -18,13 +18,13 @@ class _Templates:
             # Assume file name in this package.
             return self._env.get_template(value)
 
-    @property 
+    @property
     def env(self):
-        return self._env 
-    
+        return self._env
+
     @env.setter
     def env(self, value):
-        self._env = value 
+        self._env = value
         # Load templates using self._env
         self.missing = "missing.html"
         self.assertion = "assertion.html"
