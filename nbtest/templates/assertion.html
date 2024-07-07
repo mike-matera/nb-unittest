@@ -1,10 +1,6 @@
-{% import 'macros.html' as macros %}
-
-{% extends "base.html" %}
-{% block result %}
-{{ macros.error('Assertion error.') }}
-{% endblock %}
-
-{% block details %}
-{{ error }}
-{% endblock %}
+<div style="font-size: large; font-weight: bold; margin-bottom: 0.5em">
+    ⚠️ Attention needed.
+</div>
+<div>
+    {{ error }}
+</div>

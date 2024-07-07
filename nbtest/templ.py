@@ -9,17 +9,26 @@ class _Templates:
     """Manage templates used by nbtest."""
 
     def __init__(self):
-        self._env = Environment(loader=PackageLoader("nbtest"), autoescape=select_autoescape())
-        self.assertion = "assertion.html"
-        self.missing = "missing.html"
-        self.result = "result.html"
+        self.env = Environment(loader=PackageLoader("nbtest"), autoescape=select_autoescape())
 
     def _load(self, value):
         if isinstance(value, Template):
             return value
         else:
-            # Assume file name
+            # Assume file name in this package.
             return self._env.get_template(value)
+
+    @property 
+    def env(self):
+        return self._env 
+    
+    @env.setter
+    def env(self, value):
+        self._env = value 
+        # Load templates using self._env
+        self.missing = "missing.html"
+        self.assertion = "assertion.html"
+        self.result = "result.html"
 
     @property
     def assertion(self):
@@ -28,14 +37,6 @@ class _Templates:
     @assertion.setter
     def assertion(self, value):
         self._assertion = self._load(value)
-
-    @property
-    def fail(self):
-        return self._fail
-
-    @fail.setter
-    def fail(self, value):
-        self._fail = self._load(value)
 
     @property
     def missing(self):

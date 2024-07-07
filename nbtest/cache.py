@@ -7,6 +7,7 @@ import ast
 import re
 import types
 import unittest
+import sys
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
@@ -56,7 +57,7 @@ class CellCache(Magics):
                 self._test_ns[attr] = value
                 nbtest_attrs[attr] = value
         except KeyError as e:
-            return HTML(templ.missing.render(error=e))
+            return HTML(templ.missing.render(missing=e))
 
         # Run the cell
         try:
@@ -64,7 +65,7 @@ class CellCache(Magics):
             exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
         except AssertionError as e:
             return HTML(templ.assertion.render(error=e))
-
+        
         # Find and execute test cases.
         suite = unittest.TestSuite()
 
