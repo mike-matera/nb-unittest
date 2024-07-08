@@ -1,4 +1,4 @@
-<div style="font-size: large; font-weight: bold; margin-bottom: 1em">
+<div style="font-size: large; font-weight: bold; margin-bottom: 1em; margin-top: 0.5em">
     {% if result.wasSuccessful() %}
         ✅ All tests passed.
     {% else %}
@@ -15,7 +15,7 @@
                     {% elif item[1].severity == "warning" %}
                         <span style="font-size: x-large; padding: 0.25em;">⚠️</span>
                     {% else %}
-                        <span style="font-size: x-large; padding: 0.25em;">❌</span>
+                        <span style="font-size: x-large; padding: 0.25em; color: red; font-weight: bold;">❌</span>
                     {% endif %}
                     <span style="font-family: monospace;">{{ item[1] }}</span>
                 </div>    
