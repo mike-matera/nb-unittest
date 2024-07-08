@@ -4,9 +4,12 @@ Tests run in a context that's protected from common student errors.
 """
 
 import ast
+import io
 import re
+import sys
 import types
 import unittest
+from dataclasses import dataclass
 
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
@@ -16,6 +19,16 @@ from .unit import NotebookTestRunner
 
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
+
+
+@dataclass
+class CellRunResult:
+    """The result of calling run() on a TagCacheEntry"""
+
+    stdout: io.StringIO
+    stderr: io.StringIO
+    outputs: list
+    result: object
 
 
 @magics_class
@@ -160,6 +173,39 @@ class TagCacheEntry:
         else:
             self.tags = []
 
-    def run(self, push={}, silent=False):
+    def run(self, push={}, capture=True):
         self.shell.push(push)
-        return self.shell.run_cell(self.source, store_history=False, silent=silent).result
+        try:
+            save_out = sys.stdout
+            save_err = sys.stderr
+            save_dh = sys.displayhook
+
+            out = io.StringIO()
+            err = io.StringIO()
+            outputs = []
+
+            def dh(obj):
+                nonlocal outputs
+                outputs.append(obj)
+
+            if capture:
+                sys.stdout = out
+                sys.stderr = err
+                sys.displayhook = dh
+
+            r = self.shell.run_cell(self.source, store_history=False, silent=False)
+
+            if capture:
+                return CellRunResult(
+                    stdout=out.getvalue(),
+                    stderr=err.getvalue(),
+                    outputs=outputs,
+                    result=outputs[-1],
+                )
+            else:
+                return None
+
+        finally:
+            sys.stdout = save_out
+            sys.stderr = save_err
+            sys.displayhook = save_dh
