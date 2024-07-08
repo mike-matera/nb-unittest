@@ -4,7 +4,8 @@ Tests run in a context that's protected from common student errors.
 """
 
 import unittest
-from typing import Iterator
+from functools import wraps
+from typing import Callable, Iterator
 
 from .tagcache import TagCache, TagCacheEntry, nbtest_attrs
 
@@ -14,21 +15,25 @@ __all__ = ["nbtest_attrs", "get", "items", "tags", "warning", "info", "error"]
 
 
 def get(tag: str) -> TagCacheEntry:
+    """Retrieve cell information by the tag name. Tag names should include the @ symbol."""
     if _cache is None:
         raise RuntimeError("The nbtest extension has not been loaded.")
     return _cache._cache[tag]
 
 
 def items() -> Iterator[tuple[str, TagCacheEntry]]:
+    """Return an iterator of cell cell tags and cache entries."""
     return _cache._cache.items()
 
 
 def tags() -> Iterator[str]:
+    """Return an iterator of cell tags."""
     return _cache._cache.keys()
 
 
 def _severity(level: str):
-    def _s(f):
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
         def _w(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
@@ -39,12 +44,17 @@ def _severity(level: str):
         _w.__doc__ = f.__doc__
         return _w
 
-    return _s
+    return decorator
 
 
 warning = _severity("warning")
+warning.__doc__ = """A decorator for test functions that marks a failure as a warning."""
+
 error = _severity("error")
+error.__doc__ = """A decorator for test functions that marks a failure as an error (the default)."""
+
 info = _severity("info")
+info.__doc__ = """A decorator for test functions that marks a failure as an information."""
 
 
 def load_ipython_extension(ipython):

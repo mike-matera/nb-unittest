@@ -1,6 +1,5 @@
 """
-An IPython plugin that make it possible to write clear, concise and safe unit tests for student code.
-Tests run in a context that's protected from common student errors.
+The implementation of a cell tag cache.
 """
 
 import ast
@@ -10,7 +9,9 @@ import sys
 import types
 import unittest
 from dataclasses import dataclass
+from typing import Any, Mapping, Set, Union
 
+from IPython.core.interactiveshell import ExecutionResult, InteractiveShell
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
 
@@ -25,10 +26,10 @@ runner_class = NotebookTestRunner
 class CellRunResult:
     """The result of calling run() on a TagCacheEntry"""
 
-    stdout: io.StringIO
-    stderr: io.StringIO
-    outputs: list
-    result: object
+    stdout: str
+    stderr: str
+    outputs: list[Any]
+    result: Any
 
 
 @magics_class
@@ -38,13 +39,14 @@ class TagCache(Magics):
     cells that is used to run unit tests on code in different cells.
     """
 
-    def __init__(self, shell):
+    def __init__(self, shell: InteractiveShell):
+        """Initialize the plugin."""
         super().__init__(shell)
         self._cache = {}
         self._test_ns = {"shell": self.shell}
 
     @cell_magic
-    def testing(self, line, cell):
+    def testing(self, line: str, cell: str) -> HTML:
         """
         A cell magic that finds and runs unit tests on selected symbols.
         """
@@ -148,33 +150,73 @@ class TagCacheEntry:
     def __init__(self, result, shell):
         """Create an entry."""
 
-        self.id = result.info.cell_id
-        self.info = result.info
-        self.result = result
-        self.shell = shell
-        self.source = shell.transform_cell(result.info.raw_cell)
+        self._id = result.info.cell_id
+        self._result = result
+        self._shell = shell
+        self._source = shell.transform_cell(result.info.raw_cell)
 
         try:
-            self.tree = ast.parse(self.source)
-            self.docstring = ast.get_docstring(self.tree)
-            self.tokens = set((x.__class__ for x in ast.walk(self.tree)))
+            self._tree = ast.parse(self.source)
+            self._docstring = ast.get_docstring(self.tree)
+            self._tokens = set((x.__class__ for x in ast.walk(self.tree)))
 
         except SyntaxError:
-            self.tree = None
-            self.docstring = None
-            self.tokens = None
+            self._tree = None
+            self._docstring = None
+            self._tokens = None
 
-        if self.docstring is not None:
-            self.tags = [
+        if self._docstring is not None:
+            self._tags = [
                 m.group(1)
-                for x in self.docstring.split("\n")
+                for x in self._docstring.split("\n")
                 if (m := re.match(r"(@\S+)", x.strip())) is not None
             ]
         else:
-            self.tags = []
+            self._tags = []
 
-    def run(self, push={}, capture=True):
-        self.shell.push(push)
+    @property
+    def id(self) -> str:
+        """The unique identifier of the notebook cell."""
+        return self._id
+
+    @property
+    def result(self) -> ExecutionResult:
+        """The ExecutionResult from running the cell in IPython."""
+        return self._result
+
+    @property
+    def source(self) -> str:
+        """The processed source of the cell."""
+        return self._source
+
+    @property
+    def tree(self) -> ast.Module:
+        """The parse tree generated from parsing the cell source. See ast.parse()"""
+        return self._tree
+
+    @property
+    def docstring(self) -> Union[str, None]:
+        """The docstring of the cell or `None` if there is no docstring."""
+        return self._docstring
+
+    @property
+    def tokens(self) -> Set:
+        """A set of token classes from the parsed source."""
+        return self._tokens
+
+    @property
+    def tags(self) -> Set[str]:
+        """A set of the tags found in the cell."""
+        return set(self._tags)
+
+    def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
+        """
+        Run the contents of a cached cell.
+
+        push: Update variables in the notebook namespace with names and values in `push` before running the contents.
+        capture: Set to `True` (the default) to capture stdout, stderr and output. If `False` run() returns `None`
+        """
+        self._shell.push(push)
         try:
             save_out = sys.stdout
             save_err = sys.stderr
@@ -193,7 +235,7 @@ class TagCacheEntry:
                 sys.stderr = err
                 sys.displayhook = dh
 
-            r = self.shell.run_cell(self.source, store_history=False, silent=False)
+            self._shell.run_cell(self._source, store_history=False, silent=False)
 
             if capture:
                 return CellRunResult(
