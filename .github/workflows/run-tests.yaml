@@ -2,11 +2,17 @@ name: Run Tests
 run-name: Run all tests in the tests/ directory.
 on: 
   - push
+  - workflow_dispatch
 jobs:
-  Explore-GitHub-Actions:
+  run-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - run: pip install . 
-      - run: make -C tests/
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+      - run: |
+          python -m venv venv 
+          source venv/bin/activate 
+          pip install . 
+          make -C tests/
