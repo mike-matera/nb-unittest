@@ -17,6 +17,7 @@ class RewriteVariableAssignments(ast.NodeTransformer):
     def __init__(self, *names):
         self.targets = {*names}
         self.depth = 0
+        self.rewrite = False
 
     def generic_visit(self, node: ast.AST) -> ast.AST:
         self.depth += 1
@@ -24,7 +25,16 @@ class RewriteVariableAssignments(ast.NodeTransformer):
         self.depth -= 1
         return n
 
+    def visit_Assign(self, node: ast.Assign) -> ast.AST:
+        if self.depth == 1:
+            self.rewrite = True
+            n = self.generic_visit(node)
+            self.rewrite = False
+            return n
+        else:
+            return self.generic_visit(node)
+
     def visit_Name(self, node: ast.Name) -> ast.AST:
-        if self.depth == 2 and isinstance(node.ctx, ast.Store) and node.id in self.targets:
+        if self.rewrite and isinstance(node.ctx, ast.Store) and node.id in self.targets:
             node.id = "_"
         return node

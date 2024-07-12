@@ -171,8 +171,8 @@ class TagCacheEntry:
         if self._docstring is not None:
             self._tags = [
                 m.group(1)
-                for x in self._docstring.split("\n")
-                if (m := re.match(r"(@\S+)", x.strip())) is not None
+                for x in self._docstring.split()
+                if (m := re.match(r"(@\S+)", x)) is not None
             ]
         else:
             self._tags = []
@@ -267,6 +267,8 @@ class TagCacheEntry:
             transformer = RewriteVariableAssignments(*list(push.keys()))
             self._shell.ast_transformers.append(transformer)
             self._shell.run_cell(self._source, store_history=False, silent=False)
+            if len(outputs) == 0:
+                outputs.append(None)
 
             if capture:
                 return CellRunResult(
