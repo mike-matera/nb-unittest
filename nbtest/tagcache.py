@@ -7,6 +7,7 @@ import io
 import re
 import sys
 import types
+import typing
 import unittest
 from dataclasses import dataclass
 from typing import Any, Mapping, Set, Union
@@ -15,7 +16,9 @@ from IPython.core.interactiveshell import ExecutionResult, InteractiveShell
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
 
+from .analysis import TopLevelDefines
 from .templ import templ
+from .transforms import RewriteVariableAssignments
 from .unit import NotebookTestRunner
 
 nbtest_attrs = {}
@@ -209,6 +212,28 @@ class TagCacheEntry:
         """A set of the tags found in the cell."""
         return set(self._tags)
 
+    def _find(self, ntype: list[ast.AST]) -> list[typing.Any]:
+        tlds = TopLevelDefines()
+        tlds.visit(self.tree)
+        return {x[0]: self._shell.user_ns[x[0]] for x in tlds.defs if x[1] in ntype}
+
+    @property
+    def functions(self) -> list[types.FunctionType]:
+        """
+        Find all package level functions in a cell.
+        """
+        return self._find([ast.FunctionDef])
+
+    @property
+    def classes(self) -> list[type]:
+        """
+        Find all"""
+        return self._find([ast.ClassDef])
+
+    @property
+    def assignments(self) -> list[type]:
+        return self._find([ast.Assign])
+
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
         """
         Run the contents of a cached cell.
@@ -235,6 +260,8 @@ class TagCacheEntry:
                 sys.stderr = err
                 sys.displayhook = dh
 
+            transformer = RewriteVariableAssignments(*list(push.keys()))
+            self._shell.ast_transformers.append(transformer)
             self._shell.run_cell(self._source, store_history=False, silent=False)
 
             if capture:
@@ -251,3 +278,4 @@ class TagCacheEntry:
             sys.stdout = save_out
             sys.stderr = save_err
             sys.displayhook = save_dh
+            self._shell.ast_transformers.remove(transformer)
