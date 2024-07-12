@@ -1,15 +1,17 @@
 [project]
 name = "nbtest"
 version = "0.5.0"
+requires-python = ">= 3.10"
 dependencies = [
-    'importlib-metadata; python_version<"3.8"',
+    "jinja2", 
+    "jupyterlab",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
 
 [build-system]
-requires = ["setuptools", "jinja2"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
