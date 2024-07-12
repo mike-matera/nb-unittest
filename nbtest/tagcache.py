@@ -220,18 +220,22 @@ class TagCacheEntry:
     @property
     def functions(self) -> list[types.FunctionType]:
         """
-        Find all package level functions in a cell.
+        Find all package level functions in the cell.
         """
         return self._find([ast.FunctionDef])
 
     @property
     def classes(self) -> list[type]:
         """
-        Find all"""
+        Find all package level class definitions in the cell.
+        """
         return self._find([ast.ClassDef])
 
     @property
     def assignments(self) -> list[type]:
+        """
+        Find all assigned variables in the cell.
+        """
         return self._find([ast.Assign])
 
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
