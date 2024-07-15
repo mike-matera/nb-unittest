@@ -90,21 +90,18 @@ class TagCache(Magics):
         if self._test_ns["nbtest_cases"] is not None:
             # Test cases are specified
             for tc in self._test_ns["nbtest_cases"]:
-                match tc:
-                    case str():
-                        suite.addTest(unittest.defaultTestLoader.loadTestsFromName(tc))
-                    case _ if isinstance(tc, unittest.TestCase) or isinstance(
-                        tc, unittest.TestSuite
-                    ):
-                        suite.addTest(tc)
-                    case type() if issubclass(tc, unittest.TestCase):
-                        suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
-                    case types.ModuleType():
-                        suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
-                    case _:
-                        raise ValueError(
-                            f"Invalid value in test_cases: {tc}. Entries must be a string, TestCase class or instance, a TestSuite, or a module."
-                        )
+                if isinstance(tc, str):
+                    suite.addTest(unittest.defaultTestLoader.loadTestsFromName(tc))
+                elif isinstance(tc, unittest.TestCase) or isinstance(tc, unittest.TestSuite):
+                    suite.addTest(tc)
+                elif isinstance(tc, type) and issubclass(tc, unittest.TestCase):
+                    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
+                elif isinstance(tc, types.ModuleType):
+                    suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
+                else:
+                    raise ValueError(
+                        f"Invalid value in test_cases: {tc}. Entries must be a string, TestCase class or instance, a TestSuite, or a module."
+                    )
 
         else:
             # Look for cases in the cell
@@ -213,9 +210,18 @@ class TagCacheEntry:
         return set(self._tags)
 
     def _find(self, ntype: list[ast.AST]) -> list[typing.Any]:
+        """
+        Find instances of specified definitions where:
+            1. The definition happened at module scope, not inside a function or class.
+            2. The symbol is defined in the notebook namespace.
+        """
         tlds = TopLevelDefines()
         tlds.visit(self.tree)
-        return {x[0]: self._shell.user_ns[x[0]] for x in tlds.defs if x[1] in ntype}
+        return {
+            x[0]: self._shell.user_ns[x[0]]
+            for x in tlds.defs
+            if x[1] in ntype and x[0] in self._shell.user_ns
+        }
 
     @property
     def functions(self) -> list[types.FunctionType]:
