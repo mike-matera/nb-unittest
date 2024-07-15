@@ -2,8 +2,6 @@
 Simplifications of unittest classes that focus on readable results.
 """
 
-import contextlib
-import io
 import unittest
 from types import TracebackType
 
@@ -14,8 +12,7 @@ class NotebookTestRunner:
     """
 
     def run(self, test: unittest.TestSuite | unittest.TestCase) -> unittest.TestResult:
-        with contextlib.redirect_stdout(io.StringIO()) as self.stdout:
-            return test.run(NotebookResult())
+        return test.run(NotebookResult())
 
 
 class NotebookResult(unittest.TestResult):
@@ -76,17 +73,25 @@ class NotebookResult(unittest.TestResult):
         self.unexpectedSuccesses.append(self._format_test_name(test))
 
     def _format_test_name(self, test: unittest.TestCase) -> str:
-        desc = test.shortDescription()
+        # Getting unfiltered information from unittest isn't possible. Ugh.
+        if test.__class__ == unittest.FunctionTestCase:
+            desc = test._testFunc.__doc__
+        elif test.__class__ == unittest.TestCase:
+            desc = test._testMethodDoc
+        else:
+            desc = test.shortDescription()
+
         if desc is not None:
-            return desc
+            return desc.strip()
 
         default_message = (
             """The function <span style="font-family: monospace">{}()</span> reported an error."""
         )
-        if isinstance(test, unittest.FunctionTestCase):
-            return default_message.format(test.id())
-        else:
+
+        if test.__class__ == unittest.TestCase:
             return default_message.format(".".join(test.id().split(".")[-2:]))
+        else:
+            return default_message.format(test.id())
 
     def _format_error(
         self,
