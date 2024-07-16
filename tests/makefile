@@ -2,5 +2,5 @@
 all: test
 
 test:
-	for test in *.ipynb; do jupyter execute $$test; done
+	set -e; for test in *.ipynb; do jupyter execute $$test; done
 

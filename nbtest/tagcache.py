@@ -255,33 +255,40 @@ class TagCacheEntry:
         try:
             save_out = sys.stdout
             save_err = sys.stderr
-            save_dh = sys.displayhook
+            save_idh = sys.displayhook
+            save_edh = self._shell.user_ns["__builtins__"].display
 
             out = io.StringIO()
             err = io.StringIO()
             outputs = []
+            result = None
 
-            def dh(obj):
+            def explicit_displayhook(obj):
                 nonlocal outputs
-                outputs.append(obj)
+                if obj is not None:
+                    outputs.append(obj)
+
+            def implicit_displayhook(obj):
+                nonlocal result, explicit_displayhook
+                explicit_displayhook(obj)
+                result = obj
 
             if capture:
                 sys.stdout = out
                 sys.stderr = err
-                sys.displayhook = dh
+                sys.displayhook = implicit_displayhook
+                self._shell.user_ns["__builtins__"].display = explicit_displayhook
 
             transformer = RewriteVariableAssignments(*list(push.keys()))
             self._shell.ast_transformers.append(transformer)
             self._shell.run_cell(self._source, store_history=False, silent=False)
-            if len(outputs) == 0:
-                outputs.append(None)
 
             if capture:
                 return CellRunResult(
                     stdout=out.getvalue(),
                     stderr=err.getvalue(),
                     outputs=outputs,
-                    result=outputs[-1],
+                    result=result,
                 )
             else:
                 return None
@@ -289,5 +296,6 @@ class TagCacheEntry:
         finally:
             sys.stdout = save_out
             sys.stderr = save_err
-            sys.displayhook = save_dh
+            sys.displayhook = save_idh
+            self._shell.user_ns["__builtins__"].display = save_edh
             self._shell.ast_transformers.remove(transformer)
