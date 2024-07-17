@@ -7,21 +7,22 @@ import unittest
 from functools import wraps
 from typing import Callable, Iterator
 
-from .tagcache import TagCache, TagCacheEntry, nbtest_attrs
+from . import tagcache
+from .tagcache import nbtest_attrs
 
 _cache = None
 
 __all__ = ["nbtest_attrs", "get", "items", "tags", "warning", "info", "error"]
 
 
-def get(tag: str) -> TagCacheEntry:
+def get(tag: str) -> tagcache.TagCacheEntry:
     """Retrieve cell information by the tag name. Tag names should include the @ symbol."""
     if _cache is None:
         raise RuntimeError("The nbtest extension has not been loaded.")
     return _cache._cache[tag]
 
 
-def items() -> Iterator[tuple[str, TagCacheEntry]]:
+def items() -> Iterator[tuple[str, tagcache.TagCacheEntry]]:
     """Return an iterator of cell cell tags and cache entries."""
     return _cache._cache.items()
 
@@ -57,8 +58,12 @@ info = _severity("info")
 info.__doc__ = """A decorator for test functions that marks a failure as an information."""
 
 
+def raise_on_failure(r):
+    tagcache.raise_on_failure = True
+
+
 def load_ipython_extension(ipython):
     global _cache
-    _cache = TagCache(ipython)
+    _cache = tagcache.TagCache(ipython)
     ipython.register_magics(_cache)
     ipython.events.register("post_run_cell", _cache.post_run_cell)

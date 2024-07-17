@@ -14,7 +14,7 @@ from typing import Any, Mapping, Set, Union
 
 from IPython.core.interactiveshell import ExecutionResult, InteractiveShell
 from IPython.core.magic import Magics, cell_magic, magics_class
-from IPython.display import HTML
+from IPython.display import HTML, display
 
 from .analysis import TopLevelDefines
 from .templ import templ
@@ -23,6 +23,7 @@ from .unit import NotebookTestRunner
 
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
+raise_on_failure = False
 
 
 @dataclass
@@ -129,7 +130,12 @@ class TagCache(Magics):
         # Run tests
         runner = runner_class()
         result = runner.run(suite)
-        return HTML(templ.result.render(result=result))
+        response = HTML(templ.result.render(result=result))
+        if raise_on_failure and not result.wasSuccessful():
+            display(response)
+            raise RuntimeError("Tests failed and raise_on_failure is True")
+        else:
+            return response
 
     def post_run_cell(self, result):
         """
