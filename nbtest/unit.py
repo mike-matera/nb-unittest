@@ -29,6 +29,7 @@ class NotebookResult(unittest.TestResult):
         test: unittest.TestCase,
         err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
     ) -> None:
+        self.stop()
         self.errors.append(
             (
                 self._format_test_name(test),
@@ -41,6 +42,7 @@ class NotebookResult(unittest.TestResult):
         test: unittest.TestCase,
         err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
     ) -> None:
+        self.stop()
         self.failures.append(
             (
                 self._format_test_name(test),
@@ -70,6 +72,7 @@ class NotebookResult(unittest.TestResult):
         )
 
     def addUnexpectedSuccess(self, test: unittest.TestCase) -> None:
+        self.stop()
         self.unexpectedSuccesses.append(self._format_test_name(test))
 
     def _format_test_name(self, test: unittest.TestCase) -> str:
