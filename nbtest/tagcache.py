@@ -98,10 +98,10 @@ class TagCache(Magics):
                     suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
                 elif isinstance(tc, types.ModuleType):
                     suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
+                elif isinstance(tc, types.FunctionType):
+                    suite.addTest(unittest.FunctionTestCase(tc))
                 else:
-                    raise ValueError(
-                        f"Invalid value in test_cases: {tc}. Entries must be a string, TestCase class or instance, a TestSuite, or a module."
-                    )
+                    raise ValueError(f"""Invalid value in test_cases: {tc}.""")
 
         else:
             # Look for cases in the cell
@@ -209,7 +209,7 @@ class TagCacheEntry:
         """A set of the tags found in the cell."""
         return set(self._tags)
 
-    def _find(self, ntype: list[ast.AST]) -> list[typing.Any]:
+    def _find(self, ntype: list[ast.AST]) -> dict[str, typing.Any]:
         """
         Find instances of specified definitions where:
             1. The definition happened at module scope, not inside a function or class.
@@ -224,25 +224,32 @@ class TagCacheEntry:
         }
 
     @property
-    def functions(self) -> list[types.FunctionType]:
+    def functions(self) -> dict[str, types.FunctionType]:
         """
         Find all package level functions in the cell.
         """
         return self._find([ast.FunctionDef])
 
     @property
-    def classes(self) -> list[type]:
+    def classes(self) -> dict[str, type]:
         """
         Find all package level class definitions in the cell.
         """
         return self._find([ast.ClassDef])
 
     @property
-    def assignments(self) -> list[type]:
+    def assignments(self) -> dict[str, typing.Any]:
         """
         Find all assigned variables in the cell.
         """
         return self._find([ast.Assign])
+
+    @property
+    def constants(self) -> set[typing.Any]:
+        """
+        Find all literal values in the cell.
+        """
+        return {x.value for x in ast.walk(self.tree) if x.__class__ == ast.Constant}
 
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
         """
