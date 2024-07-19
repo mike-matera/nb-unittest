@@ -13,6 +13,9 @@ class ATestCase(unittest.TestCase):
     def test_reusable(self):
         self.fail()
 
+    def test_reusable2(self):
+        self.fail()
+
 
 class CustomizableTestCase(unittest.TestCase):
     """A test case that is made to be customized."""

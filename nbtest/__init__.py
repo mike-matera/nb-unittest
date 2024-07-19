@@ -12,7 +12,15 @@ from .tagcache import nbtest_attrs
 
 _cache = None
 
-__all__ = ["nbtest_attrs", "get", "items", "tags", "warning", "info", "error"]
+__all__ = [
+    "nbtest_attrs",
+    "get",
+    "items",
+    "tags",
+    "warning",
+    "info",
+    "error",
+]
 
 
 def get(tag: str) -> tagcache.TagCacheEntry:
@@ -56,10 +64,6 @@ error.__doc__ = """A decorator for test functions that marks a failure as an err
 
 info = _severity("info")
 info.__doc__ = """A decorator for test functions that marks a failure as an information."""
-
-
-def raise_on_failure(r):
-    tagcache.raise_on_failure = True
 
 
 def load_ipython_extension(ipython):

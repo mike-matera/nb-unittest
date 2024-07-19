@@ -29,6 +29,7 @@ class _Templates:
         self.missing = "missing.html"
         self.assertion = "assertion.html"
         self.result = "result.html"
+        self.wait = "wait.html"
 
     @property
     def assertion(self):
@@ -53,6 +54,14 @@ class _Templates:
     @result.setter
     def result(self, value):
         self._result = self._load(value)
+
+    @property
+    def wait(self):
+        return self._wait
+
+    @wait.setter
+    def wait(self, value):
+        self._wait = self._load(value)
 
 
 # Singleton instance.

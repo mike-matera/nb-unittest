@@ -2,17 +2,36 @@
 Simplifications of unittest classes that focus on readable results.
 """
 
+import asyncio
+import time
 import unittest
 from types import TracebackType
+from unittest.case import _addSkip, _Outcome
 
 
-class NotebookTestRunner:
+class NotebookTestSuite:
     """
-    An simple test runner that provides verbose results and captures output.
+    A simplified test suite.
     """
 
-    def run(self, test: unittest.TestSuite | unittest.TestCase) -> unittest.TestResult:
-        return test.run(NotebookResult())
+    def __init__(self, tests=()):
+        self._tests = list(tests)
+
+    def addTest(self, test):
+        self._tests.append(test)
+
+    def run(self, result):
+        for test in self._tests:
+            test.run(result)
+        return result
+
+    async def async_run(self, result):
+        for test in self._tests:
+            if isinstance(test, unittest.TestCase):
+                await generic_async_run(test, result)
+            else:
+                await test.async_run(result)
+        return result
 
 
 class NotebookResult(unittest.TestResult):
@@ -104,3 +123,111 @@ class NotebookResult(unittest.TestResult):
             return f"""{err[0].__name__}: {err[1]}"""
         else:
             return err[1]
+
+
+class NotebookTestRunner:
+    """
+    An simple test runner that provides an async run() method.
+    """
+
+    async def async_run(self, test: NotebookTestSuite) -> NotebookResult:
+        return await test.async_run(NotebookResult())
+
+    def run(self, test: NotebookTestSuite) -> NotebookResult:
+        return test.run(NotebookResult())
+
+
+class AsyncFunctionTestCase(unittest.FunctionTestCase):
+    """
+    A wrapper for aync functions.
+    """
+
+    def __init__(self, testFunc):
+        super().__init__(testFunc, setUp=None, tearDown=None, description=None)
+
+    async def runTest(self):
+        if asyncio.iscoroutinefunction(self._testFunc):
+            return await self._testFunc()
+        else:
+            return self._testFunc()
+
+
+async def generic_async_run(self, result):
+    """
+    An async version of TestCase.run() defined here:
+        https://github.com/python/cpython/blob/main/Lib/unittest/case.py
+
+    As Jason Fried said, "The best solution is to provide an entire async call chain from
+    their code to your code and maintain a separate blocking chain that used to exist."
+
+        https://youtu.be/XW7yv6HuWTE?si=0SV9ISfL2qUH11F7
+
+    Hopefully the unittest library will catch up.
+    """
+
+    async def run_or_await(func, *args, **kwargs):
+        if asyncio.iscoroutinefunction(func):
+            return await func(*args, **kwargs)
+        else:
+            return func(*args, **kwargs)
+
+    stopTestRun = None
+
+    result.startTest(self)
+    try:
+        testMethod = getattr(self, self._testMethodName)
+        if getattr(self.__class__, "__unittest_skip__", False) or getattr(
+            testMethod, "__unittest_skip__", False
+        ):
+            # If the class or method was skipped.
+            skip_why = getattr(self.__class__, "__unittest_skip_why__", "") or getattr(
+                testMethod, "__unittest_skip_why__", ""
+            )
+            _addSkip(result, self, skip_why)
+            return result
+
+        expecting_failure = getattr(self, "__unittest_expecting_failure__", False) or getattr(
+            testMethod, "__unittest_expecting_failure__", False
+        )
+        outcome = _Outcome(result)
+        start_time = time.perf_counter()
+        try:
+            self._outcome = outcome
+
+            with outcome.testPartExecutor(self):
+                # self._callSetUp()
+                await run_or_await(self.setUp)
+            if outcome.success:
+                outcome.expecting_failure = expecting_failure
+                with outcome.testPartExecutor(self):
+                    # self._callTestMethod(testMethod)
+                    await run_or_await(testMethod)
+                outcome.expecting_failure = False
+                with outcome.testPartExecutor(self):
+                    # self._callTearDown()
+                    await run_or_await(self.tearDown)
+            self.doCleanups()
+            self._addDuration(result, (time.perf_counter() - start_time))
+
+            if outcome.success:
+                if expecting_failure:
+                    if outcome.expectedFailure:
+                        self._addExpectedFailure(result, outcome.expectedFailure)
+                    else:
+                        self._addUnexpectedSuccess(result)
+                else:
+                    result.addSuccess(self)
+            return result
+        finally:
+            # explicitly break reference cycle:
+            # outcome.expectedFailure -> frame -> outcome -> outcome.expectedFailure
+            outcome.expectedFailure = None
+            outcome = None
+
+            # clear the outcome, no more needed
+            self._outcome = None
+
+    finally:
+        result.stopTest(self)
+        if stopTestRun is not None:
+            stopTestRun()

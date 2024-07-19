@@ -3,6 +3,7 @@ The implementation of a cell tag cache.
 """
 
 import ast
+import asyncio
 import io
 import re
 import sys
@@ -12,18 +13,20 @@ import unittest
 from dataclasses import dataclass
 from typing import Any, Mapping, Set, Union
 
+import IPython.core.ultratb
+import ipywidgets
 from IPython.core.interactiveshell import ExecutionResult, InteractiveShell
 from IPython.core.magic import Magics, cell_magic, magics_class
-from IPython.display import HTML, display
+from IPython.display import HTML
 
 from .analysis import TopLevelDefines
 from .templ import templ
 from .transforms import RewriteVariableAssignments
-from .unit import NotebookTestRunner
+from .unit import AsyncFunctionTestCase, NotebookResult, NotebookTestRunner, NotebookTestSuite
 
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
-raise_on_failure = False
+_last_succeeded = None
 
 
 @dataclass
@@ -54,7 +57,10 @@ class TagCache(Magics):
         """
         A cell magic that finds and runs unit tests on selected symbols.
         """
-        global nbtest_attrs
+        global nbtest_attrs, _last_succeeded
+
+        _last_succeeded = False
+        runner_task = None
 
         self._test_ns["nbtest_cases"] = None
         nbtest_attrs.clear()
@@ -76,6 +82,7 @@ class TagCache(Magics):
                 self._test_ns[attr] = value
                 nbtest_attrs[attr] = value
         except KeyError as e:
+            _last_succeeded = False
             return HTML(templ.missing.render(missing=e))
 
         # Run the cell
@@ -83,24 +90,39 @@ class TagCache(Magics):
             tree = ast.parse(cell)
             exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
         except AssertionError as e:
+            _last_succeeded = False
             return HTML(templ.assertion.render(error=e))
 
+        # Look for async test cases.
+        do_async = False
+        funct_testcase = unittest.FunctionTestCase
+
+        class async_visitor(ast.NodeVisitor):
+            def visit_AsyncFunctionDef(_, node):
+                nonlocal funct_testcase, do_async
+                do_async = True
+                funct_testcase = AsyncFunctionTestCase
+
+        async_visitor().visit(tree)
+
         # Find and execute test cases.
-        suite = unittest.TestSuite()
+        suite = NotebookTestSuite()
+        loader = unittest.TestLoader()
+        loader.suiteClass = NotebookTestSuite
 
         if self._test_ns["nbtest_cases"] is not None:
             # Test cases are specified
             for tc in self._test_ns["nbtest_cases"]:
                 if isinstance(tc, str):
-                    suite.addTest(unittest.defaultTestLoader.loadTestsFromName(tc))
+                    suite.addTest(loader.loadTestsFromName(tc))
                 elif isinstance(tc, unittest.TestCase) or isinstance(tc, unittest.TestSuite):
                     suite.addTest(tc)
                 elif isinstance(tc, type) and issubclass(tc, unittest.TestCase):
-                    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(tc))
+                    suite.addTest(loader.loadTestsFromTestCase(tc))
                 elif isinstance(tc, types.ModuleType):
-                    suite.addTest(unittest.defaultTestLoader.loadTestsFromModule(tc))
+                    suite.addTest(loader.loadTestsFromModule(tc))
                 elif isinstance(tc, types.FunctionType):
-                    suite.addTest(unittest.FunctionTestCase(tc))
+                    suite.addTest(funct_testcase(tc))
                 else:
                     raise ValueError(f"""Invalid value in test_cases: {tc}.""")
 
@@ -113,29 +135,54 @@ class TagCache(Magics):
                     if isinstance(self._test_ns[node.name], type) and issubclass(
                         self._test_ns[node.name], unittest.TestCase
                     ):
-                        suite.addTest(
-                            unittest.defaultTestLoader.loadTestsFromTestCase(
-                                self._test_ns[node.name]
-                            )
-                        )
+                        suite.addTest(loader.loadTestsFromTestCase(self._test_ns[node.name]))
                     # do not descend
 
                 def visit_FunctionDef(_, node):
                     if node.name.startswith("test") and callable(self._test_ns[node.name]):
-                        suite.addTest(unittest.FunctionTestCase(self._test_ns[node.name]))
+                        suite.addTest(funct_testcase(self._test_ns[node.name]))
+                    # do not descend
+
+                def visit_AsyncFunctionDef(_, node):
+                    if node.name.startswith("test") and callable(self._test_ns[node.name]):
+                        suite.addTest(funct_testcase(self._test_ns[node.name]))
                     # do not descend
 
             top_test_visitor().visit(tree)
 
-        # Run tests
-        runner = runner_class()
-        result = runner.run(suite)
-        response = HTML(templ.result.render(result=result))
-        if raise_on_failure and not result.wasSuccessful():
-            display(response)
-            raise RuntimeError("Tests failed and raise_on_failure is True")
+        if do_async:
+            # Asyncronous execution. This has some problems.
+
+            output = ipywidgets.Output()
+            html = ipywidgets.HTML(templ.wait.render())
+            output.append_display_data(html)
+
+            async def do_run():
+                global _last_succeeded
+                nonlocal output
+                try:
+                    with output:
+                        runner = NotebookTestRunner()
+                        result = await runner.async_run(suite)
+                        result = NotebookResult()
+                        html.value = templ.result.render(result=result)
+                        _last_succeeded = result.wasSuccessful()
+                except Exception:
+                    _last_succeeded = False
+                    formatter = IPython.core.ultratb.AutoFormattedTB(
+                        mode="Verbose", color_scheme="Linux"
+                    )
+                    output.append_stderr(formatter.text(*sys.exc_info()))
+
+            runner_task = asyncio.create_task(do_run(), name="Test Runner")
+            return output
+
         else:
-            return response
+            # Synchronous execution.
+            runner = NotebookTestRunner()
+            result = runner.run(suite)
+            _last_succeeded = result.wasSuccessful()
+            return HTML(templ.result.render(result=result))
 
     def post_run_cell(self, result):
         """
