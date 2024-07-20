@@ -22,11 +22,15 @@ class NotebookTestSuite:
 
     def run(self, result):
         for test in self._tests:
+            if result.shouldStop:
+                return result
             test.run(result)
         return result
 
     async def async_run(self, result):
         for test in self._tests:
+            if result.shouldStop:
+                return result
             if isinstance(test, unittest.TestCase):
                 await generic_async_run(test, result)
             else:
