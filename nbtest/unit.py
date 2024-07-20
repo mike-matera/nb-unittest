@@ -6,7 +6,20 @@ import asyncio
 import time
 import unittest
 from types import TracebackType
-from unittest.case import _addSkip, _Outcome
+
+try:
+    from unittest.case import _addSkip, _Outcome
+except ImportError:
+    # Python 3.10 compatibility
+    import warnings
+
+    def _addSkip(result, test_case, reason):
+        addSkip = getattr(result, "addSkip", None)
+        if addSkip is not None:
+            addSkip(test_case, reason)
+        else:
+            warnings.warn("TestResult has no addSkip method, skips not reported", RuntimeWarning, 2)
+            result.addSuccess(test_case)
 
 
 class NotebookTestSuite:
