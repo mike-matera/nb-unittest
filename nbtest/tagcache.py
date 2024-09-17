@@ -22,7 +22,7 @@ from IPython.display import HTML
 from .analysis import TopLevelDefines
 from .templ import templ
 from .transforms import RewriteVariableAssignments
-from .unit import AsyncFunctionTestCase, NotebookResult, NotebookTestRunner, NotebookTestSuite
+from .unit import AsyncFunctionTestCase, NotebookTestRunner, NotebookTestSuite
 
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
@@ -164,7 +164,6 @@ class TagCache(Magics):
                     with output:
                         runner = NotebookTestRunner()
                         result = await runner.async_run(suite)
-                        result = NotebookResult()
                         html.value = templ.result.render(result=result)
                         _last_succeeded = result.wasSuccessful()
                 except Exception:

@@ -1,6 +1,6 @@
 # Notebook Embedded Unit Tests 
 
-I distribute graded and ungraded assignments in my [Python Programming for Everyone](https://www.lifealgorithmic.com/cis-15/index.html) class as [Jupyter Notebooks](https://jupyter.org/). Students download and submit notebooks on [Canvas LMS](https://www.instructure.com/canvas). When I first started teaching with Jupyter most students attended class in person. Since the pandemic most students are full remote. The purpose of this module is to provide a foundation for checking and grading notebooks that gives helpful and beautiful feedback when a solution is wrong so that remote students have a better experience. 
+I distribute graded and ungraded assignments in my [Python Programming for Everyone](https://github.com/mike-matera/python-for-everyone) class as [Jupyter Notebooks](https://jupyter.org/). Students download and submit notebooks on [Canvas LMS](https://www.instructure.com/canvas). When I first started teaching with Jupyter most students attended class in person. Since the pandemic most students are full remote. The purpose of this module is to provide a foundation for checking and grading notebooks that gives helpful and beautiful feedback when a solution is wrong so that remote students have a better experience. 
 
 The goals of this project are: 
 
