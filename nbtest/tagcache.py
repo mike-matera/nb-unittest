@@ -303,6 +303,17 @@ class TagCacheEntry:
         """
         return {x.value for x in ast.walk(self.tree) if x.__class__ == ast.Constant}
 
+    @property
+    def calls(self) -> set[str]:
+        """
+        Find all function calls.
+        """
+        return {
+            x.func.id if hasattr(x.func, "id") else x.func.attr
+            for x in ast.walk(self.tree)
+            if x.__class__ == ast.Call
+        }
+
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
         """
         Run the contents of a cached cell.
