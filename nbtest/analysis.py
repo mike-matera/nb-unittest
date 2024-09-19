@@ -53,8 +53,18 @@ class AnalysisNode:
     def tokens(self) -> set:
         """A set of token classes from the current scope."""
 
-        class RootExtractor(RootNodeFinder, ast.NodeTransformer):
-            pass
+        class RootExtractor(ast.NodeTransformer):
+            def visit_ClassDef(self, node: ast.ClassDef):
+                node.body = []
+                return node
+
+            def visit_FunctionDef(self, node: ast.FunctionDef):
+                node.body = []
+                return node
+
+            def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+                node.body = []
+                return node
 
         return set((x.__class__ for x in ast.walk(RootExtractor().visit(self.tree))))
 
