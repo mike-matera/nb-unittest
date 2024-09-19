@@ -3,6 +3,7 @@ Helpers that analyze code cells.
 """
 
 import ast
+import copy
 import types
 import typing
 
@@ -34,12 +35,12 @@ class AnalysisNode:
 
     @property
     def tree(self) -> ast.Module:
-        """The parse tree generated from parsing the cell source. See ast.parse()"""
+        """The parse tree generated from parsing the cell source. Returns a deep copy of the tree."""
         if self._tree.__class__ == MarkerNode:
             # Don't show users my fake node.
-            return self._tree._real_node
+            return copy.deepcopy(self._tree._real_node)
         else:
-            return self._tree
+            return copy.deepcopy(self._tree)
 
     @property
     def docstring(self) -> typing.Union[str, None]:
@@ -50,8 +51,12 @@ class AnalysisNode:
 
     @property
     def tokens(self) -> set:
-        """A set of token classes from all of the parsed source."""
-        return set((x.__class__ for x in ast.walk(self._tree)))
+        """A set of token classes from the current scope."""
+
+        class RootExtractor(RootNodeFinder, ast.NodeTransformer):
+            pass
+
+        return set((x.__class__ for x in ast.walk(RootExtractor().visit(self.tree))))
 
     @property
     def functions(self) -> dict[str, types.FunctionType]:
