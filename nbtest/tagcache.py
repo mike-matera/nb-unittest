@@ -8,7 +8,6 @@ import io
 import re
 import sys
 import types
-import typing
 import unittest
 from dataclasses import dataclass
 from typing import Any, Mapping, Set, Union
@@ -19,7 +18,7 @@ from IPython.core.interactiveshell import ExecutionResult, InteractiveShell
 from IPython.core.magic import Magics, cell_magic, magics_class
 from IPython.display import HTML
 
-from .analysis import TopLevelDefines
+from .analysis import AnalysisNode
 from .templ import templ
 from .transforms import RewriteVariableAssignments
 from .unit import AsyncFunctionTestCase, NotebookTestRunner, NotebookTestSuite
@@ -194,7 +193,7 @@ class TagCache(Magics):
                 self._cache[tag] = entry
 
 
-class TagCacheEntry:
+class TagCacheEntry(AnalysisNode):
     """
     Information about an executed cell.
     """
@@ -205,26 +204,20 @@ class TagCacheEntry:
         self._id = result.info.cell_id
         self._result = result
         self._shell = shell
-        self._source = shell.transform_cell(result.info.raw_cell)
+        self._tags = []
 
         try:
-            self._tree = ast.parse(self.source)
-            self._docstring = ast.get_docstring(self.tree)
-            self._tokens = set((x.__class__ for x in ast.walk(self.tree)))
-
+            source = shell.transform_cell(result.info.raw_cell)
+            tree = ast.parse(source)
+            super().__init__(tree, source)
+            if self.docstring is not None:
+                self._tags = [
+                    m.group(1)
+                    for x in self.docstring.split()
+                    if (m := re.match(r"(@\S+)", x)) is not None
+                ]
         except SyntaxError:
-            self._tree = None
-            self._docstring = None
-            self._tokens = None
-
-        if self._docstring is not None:
-            self._tags = [
-                m.group(1)
-                for x in self._docstring.split()
-                if (m := re.match(r"(@\S+)", x)) is not None
-            ]
-        else:
-            self._tags = []
+            super().__init__(None, None)
 
     @property
     def id(self) -> str:
@@ -237,82 +230,9 @@ class TagCacheEntry:
         return self._result
 
     @property
-    def source(self) -> str:
-        """The processed source of the cell."""
-        return self._source
-
-    @property
-    def tree(self) -> ast.Module:
-        """The parse tree generated from parsing the cell source. See ast.parse()"""
-        return self._tree
-
-    @property
-    def docstring(self) -> Union[str, None]:
-        """The docstring of the cell or `None` if there is no docstring."""
-        return self._docstring
-
-    @property
-    def tokens(self) -> Set:
-        """A set of token classes from the parsed source."""
-        return self._tokens
-
-    @property
     def tags(self) -> Set[str]:
         """A set of the tags found in the cell."""
         return set(self._tags)
-
-    def _find(self, ntype: list[ast.AST]) -> dict[str, typing.Any]:
-        """
-        Find instances of specified definitions where:
-            1. The definition happened at module scope, not inside a function or class.
-            2. The symbol is defined in the notebook namespace.
-        """
-        tlds = TopLevelDefines()
-        tlds.visit(self.tree)
-        return {
-            x[0]: self._shell.user_ns[x[0]]
-            for x in tlds.defs
-            if x[1] in ntype and x[0] in self._shell.user_ns
-        }
-
-    @property
-    def functions(self) -> dict[str, types.FunctionType]:
-        """
-        Find all package level functions in the cell.
-        """
-        return self._find([ast.FunctionDef])
-
-    @property
-    def classes(self) -> dict[str, type]:
-        """
-        Find all package level class definitions in the cell.
-        """
-        return self._find([ast.ClassDef])
-
-    @property
-    def assignments(self) -> dict[str, typing.Any]:
-        """
-        Find all assigned variables in the cell.
-        """
-        return self._find([ast.Assign])
-
-    @property
-    def constants(self) -> set[typing.Any]:
-        """
-        Find all literal values in the cell.
-        """
-        return {x.value for x in ast.walk(self.tree) if x.__class__ == ast.Constant}
-
-    @property
-    def calls(self) -> set[str]:
-        """
-        Find all function calls.
-        """
-        return {
-            x.func.id if hasattr(x.func, "id") else x.func.attr
-            for x in ast.walk(self.tree)
-            if x.__class__ == ast.Call
-        }
 
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
         """
@@ -351,7 +271,7 @@ class TagCacheEntry:
 
             transformer = RewriteVariableAssignments(*list(push.keys()))
             self._shell.ast_transformers.append(transformer)
-            self._shell.run_cell(self._source, store_history=False, silent=False)
+            self._shell.run_cell(self.source, store_history=False, silent=False)
 
             if capture:
                 return CellRunResult(
