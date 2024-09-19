@@ -50,7 +50,7 @@ class AnalysisNode:
 
     @property
     def tokens(self) -> set:
-        """A set of token classes from the parsed source."""
+        """A set of token classes from all of the parsed source."""
         return set((x.__class__ for x in ast.walk(self._tree)))
 
     @property
