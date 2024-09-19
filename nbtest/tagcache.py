@@ -26,6 +26,18 @@ from .unit import AsyncFunctionTestCase, NotebookTestRunner, NotebookTestSuite
 nbtest_attrs = {}
 runner_class = NotebookTestRunner
 _last_succeeded = None
+_last_error = None
+
+
+def check_error(success=False):
+    """Return an exception if the last test run failed or None if it succeeded, reverse if success is True."""
+    global _last_error
+    if success:
+        if _last_error is None:
+            raise RuntimeError("ERROR: pass instead of fail.")
+    else:
+        if _last_error is not None:
+            raise _last_error
 
 
 @dataclass
@@ -56,10 +68,10 @@ class TagCache(Magics):
         """
         A cell magic that finds and runs unit tests on selected symbols.
         """
-        global nbtest_attrs, _last_succeeded
+        global nbtest_attrs, _last_error, _last_succeeded
 
         _last_succeeded = False
-        runner_task = None
+        _last_error = None
 
         self._test_ns["nbtest_cases"] = None
         nbtest_attrs.clear()
@@ -81,7 +93,7 @@ class TagCache(Magics):
                 self._test_ns[attr] = value
                 nbtest_attrs[attr] = value
         except KeyError as e:
-            _last_succeeded = False
+            _last_error = e
             return HTML(templ.missing.render(missing=e))
 
         # Run the cell
@@ -89,7 +101,7 @@ class TagCache(Magics):
             tree = ast.parse(cell)
             exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
         except AssertionError as e:
-            _last_succeeded = False
+            _last_error = e
             return HTML(templ.assertion.render(error=e))
 
         # Look for async test cases.
@@ -157,29 +169,36 @@ class TagCache(Magics):
             output.append_display_data(html)
 
             async def do_run():
-                global _last_succeeded
+                global _last_error
                 nonlocal output
                 try:
                     with output:
                         runner = NotebookTestRunner()
                         result = await runner.async_run(suite)
                         html.value = templ.result.render(result=result)
-                        _last_succeeded = result.wasSuccessful()
-                except Exception:
-                    _last_succeeded = False
+                        if result.wasSuccessful():
+                            _last_error = None
+                        else:
+                            _last_error = RuntimeError("An aync test failed.")
+
+                except Exception as e:
+                    _last_error = e
                     formatter = IPython.core.ultratb.AutoFormattedTB(
                         mode="Verbose", color_scheme="Linux"
                     )
                     output.append_stderr(formatter.text(*sys.exc_info()))
 
-            runner_task = asyncio.create_task(do_run(), name="Test Runner")
+            asyncio.create_task(do_run(), name="Test Runner")
             return output
 
         else:
             # Synchronous execution.
             runner = NotebookTestRunner()
             result = runner.run(suite)
-            _last_succeeded = result.wasSuccessful()
+            if result.wasSuccessful():
+                _last_error = None
+            else:
+                _last_error = RuntimeError("A test failed.")
             return HTML(templ.result.render(result=result))
 
     def post_run_cell(self, result):

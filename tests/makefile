@@ -1,6 +1,9 @@
+TESTS = $(addprefix temp/,$(wildcard *.ipynb))
 
-all: test
+all: $(TESTS)
 
-test:
-	set -e; for test in *.ipynb; do jupyter execute $$test; done
+temp/%.ipynb: %.ipynb
+	jupyter nbconvert --to notebook --execute $< --output-dir temp
 
+clean:
+	rm -rf temp
