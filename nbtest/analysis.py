@@ -120,6 +120,7 @@ class AnalysisNode:
             def visit_Name(self, node: ast.Name):
                 if isinstance(node.ctx, ast.Store):
                     found.append(node.id)
+                self.generic_visit(node)
 
         finder = FindAssignments()
         finder.visit(self._tree)
@@ -135,6 +136,7 @@ class AnalysisNode:
         class FindConstants(RootNodeFinder):
             def visit_Constant(self, node: ast.Constant):
                 found.append(node.value)
+                self.generic_visit(node)
 
         finder = FindConstants()
         finder.visit(self._tree)
@@ -147,11 +149,12 @@ class AnalysisNode:
         """
         found = []
 
-        class FindConstants(RootNodeFinder):
+        class FindCalls(RootNodeFinder):
             def visit_Call(self, node: ast.Call):
                 found.append(node.func.id if hasattr(node.func, "id") else node.func.attr)
+                self.generic_visit(node)
 
-        finder = FindConstants()
+        finder = FindCalls()
         finder.visit(self._tree)
         return set(found)
 
