@@ -76,22 +76,36 @@ class TagCache(Magics):
         self._test_ns["nbtest_cases"] = None
         nbtest_attrs.clear()
 
-        # Find the symbols mentioned in the cell magic
+        # Find extended symbols mentioned in the cell magic
         try:
-            for attr, value in (
-                (
-                    x[1:],
-                    self._cache[x],
-                )
-                if x.startswith("@")
-                else (
-                    x,
-                    self.shell.user_ns[x],
-                )
-                for x in line.split()
-            ):
-                self._test_ns[attr] = value
-                nbtest_attrs[attr] = value
+            for s in (x.strip() for x in line.split(",")):
+                if m := re.match(r"^(\S+)\s+as\s+(\S+)$", s):
+                    symbol = m.group(1)
+                    target = m.group(2)
+
+                    if symbol.startswith("@"):
+                        value = self._cache[symbol]
+                    else:
+                        value = self.shell.user_ns[symbol]
+
+                elif m := re.match(r"^(\S+)$", s):
+                    symbol = m.group(1)
+
+                    if symbol.startswith("@"):
+                        value = self._cache[symbol]
+                        target = symbol[1:]
+                    else:
+                        value = self.shell.user_ns[symbol]
+                        target = symbol
+
+                else:
+                    raise ValueError(
+                        f"""Bad identifier "{s}". Did you use commas to separate identifiers?"""
+                    )
+
+                self._test_ns[target] = value
+                nbtest_attrs[target] = value
+
         except KeyError as e:
             _last_error = e
             return HTML(templ.missing.render(missing=e))
