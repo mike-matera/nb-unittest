@@ -77,38 +77,39 @@ class TagCache(Magics):
         nbtest_attrs.clear()
 
         # Find extended symbols mentioned in the cell magic
-        try:
-            for s in (x.strip() for x in line.split(",")):
-                if m := re.match(r"^(\S+)\s+as\s+(\S+)$", s):
-                    symbol = m.group(1)
-                    target = m.group(2)
+        if line.strip() != "":
+            try:
+                for s in (x.strip() for x in line.split(",")):
+                    if m := re.match(r"^(\S+)\s+as\s+(\S+)$", s):
+                        symbol = m.group(1)
+                        target = m.group(2)
 
-                    if symbol.startswith("@"):
-                        value = self._cache[symbol]
+                        if symbol.startswith("@"):
+                            value = self._cache[symbol]
+                        else:
+                            value = self.shell.user_ns[symbol]
+
+                    elif m := re.match(r"^(\S+)$", s):
+                        symbol = m.group(1)
+
+                        if symbol.startswith("@"):
+                            value = self._cache[symbol]
+                            target = symbol[1:]
+                        else:
+                            value = self.shell.user_ns[symbol]
+                            target = symbol
+
                     else:
-                        value = self.shell.user_ns[symbol]
+                        raise ValueError(
+                            f"""Bad identifier "{s}". Did you use commas to separate identifiers?"""
+                        )
 
-                elif m := re.match(r"^(\S+)$", s):
-                    symbol = m.group(1)
+                    self._test_ns[target] = value
+                    nbtest_attrs[target] = value
 
-                    if symbol.startswith("@"):
-                        value = self._cache[symbol]
-                        target = symbol[1:]
-                    else:
-                        value = self.shell.user_ns[symbol]
-                        target = symbol
-
-                else:
-                    raise ValueError(
-                        f"""Bad identifier "{s}". Did you use commas to separate identifiers?"""
-                    )
-
-                self._test_ns[target] = value
-                nbtest_attrs[target] = value
-
-        except KeyError as e:
-            _last_error = e
-            return HTML(templ.missing.render(missing=e))
+            except KeyError as e:
+                _last_error = e
+                return HTML(templ.missing.render(missing=e))
 
         # Run the cell
         try:
@@ -176,7 +177,7 @@ class TagCache(Magics):
             top_test_visitor().visit(tree)
 
         if do_async:
-            # Asyncronous execution. This has some problems.
+            # Asynchronous execution. This has some problems.
 
             output = ipywidgets.Output()
             html = ipywidgets.HTML(templ.wait.render())
