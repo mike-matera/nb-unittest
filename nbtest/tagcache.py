@@ -29,15 +29,18 @@ _last_succeeded = None
 _last_error = None
 
 
-def check_error(success=False):
+def assert_error():
     """Return an exception if the last test run failed or None if it succeeded, reverse if success is True."""
     global _last_error
-    if success:
-        if _last_error is None:
-            raise RuntimeError("ERROR: pass instead of fail.")
-    else:
-        if _last_error is not None:
-            raise _last_error
+    if _last_error is None:
+        raise RuntimeError("ERROR: pass instead of fail.")
+
+
+def assert_ok():
+    """Return an exception if the last test run failed or None if it succeeded, reverse if success is True."""
+    global _last_error
+    if _last_error is not None:
+        raise _last_error
 
 
 @dataclass

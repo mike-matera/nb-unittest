@@ -8,13 +8,14 @@ from functools import wraps
 from typing import Callable, Iterator
 
 from . import tagcache
-from .tagcache import check_error, nbtest_attrs
+from .tagcache import assert_error, assert_ok, nbtest_attrs
 
 _cache = None
 
 __all__ = [
     "nbtest_attrs",
-    "check_error",
+    "assert_error",
+    "assert_ok",
     "get",
     "items",
     "tags",
