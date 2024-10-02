@@ -245,8 +245,7 @@ class TagCacheEntry(AnalysisNode):
 
         try:
             source = shell.transform_cell(result.info.raw_cell)
-            tree = ast.parse(source)
-            super().__init__(tree, source)
+            super().__init__(source)
             if self.docstring is not None:
                 self._tags = [
                     m.group(1)
@@ -270,6 +269,10 @@ class TagCacheEntry(AnalysisNode):
     def tags(self) -> Set[str]:
         """A set of the tags found in the cell."""
         return set(self._tags)
+
+    @property
+    def ns(self) -> Mapping:
+        return self._shell.user_ns
 
     def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
         """
