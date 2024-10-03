@@ -30,6 +30,10 @@ class NotebookTestSuite:
     def __init__(self, tests=()):
         self._tests = list(tests)
 
+    # For compatibility with the default runner.
+    def __call__(self, result):
+        return self.run(result)
+
     def addTest(self, test):
         self._tests.append(test)
 

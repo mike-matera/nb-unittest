@@ -191,7 +191,7 @@ class TagCache(Magics):
                 nonlocal output
                 try:
                     with output:
-                        runner = NotebookTestRunner()
+                        runner = runner_class()
                         result = await runner.async_run(suite)
                         html.value = templ.result.render(result=result)
                         if result.wasSuccessful():
@@ -211,7 +211,7 @@ class TagCache(Magics):
 
         else:
             # Synchronous execution.
-            runner = NotebookTestRunner()
+            runner = runner_class()
             result = runner.run(suite)
             if result.wasSuccessful():
                 _last_error = None
