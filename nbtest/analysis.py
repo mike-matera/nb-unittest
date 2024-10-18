@@ -167,7 +167,7 @@ class AnalysisNode:
     @property
     def arguments(self) -> set[str]:
         """
-        If the current node is a function definition, the set of the argument names.
+        If the current node is a function definition, the list of argument names in definition order.
         """
         found = []
 
@@ -175,16 +175,19 @@ class AnalysisNode:
         if t.__class__ not in (ast.FunctionDef, ast.AsyncFunctionDef):
             raise ValueError("Cannot call arguments on a non-function.")
 
-        for arg in t.args.posonlyargs + t.args.args + t.args.kwonlyargs:
+        for arg in t.args.posonlyargs + t.args.args:
             found.append(arg.arg)
 
         if t.args.vararg is not None:
             found.append(f"*{t.args.vararg.arg}")
 
+        for arg in t.args.kwonlyargs:
+            found.append(arg.arg)
+
         if t.args.kwarg is not None:
             found.append(f"**{t.args.kwarg.arg}")
 
-        return set(found)
+        return found
 
 
 class MarkerNode(ast.AST):
