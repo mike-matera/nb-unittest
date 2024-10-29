@@ -228,7 +228,9 @@ async def generic_async_run(self, result):
                     # self._callTearDown()
                     await run_or_await(self.tearDown)
             self.doCleanups()
-            self._addDuration(result, (time.perf_counter() - start_time))
+
+            # XXX: Not until Python 3.12
+            # self._addDuration(result, (time.perf_counter() - start_time))
 
             if outcome.success:
                 if expecting_failure:
