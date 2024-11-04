@@ -30,14 +30,20 @@ _last_error = None
 
 
 def assert_error():
-    """Return an exception if the last test run failed or None if it succeeded, reverse if success is True."""
+    """
+    Return an exception if the last test run failed or None if it succeeded,
+    reverse if success is True.
+    """
     global _last_error
     if _last_error is None:
         raise RuntimeError("ERROR: pass instead of fail.")
 
 
 def assert_ok():
-    """Return an exception if the last test run failed or None if it succeeded, reverse if success is True."""
+    """
+    Return an exception if the last test run failed or None if it succeeded,
+    reverse if success is True.
+    """
     global _last_error
     if _last_error is not None:
         raise _last_error
@@ -117,7 +123,9 @@ class TagCache(Magics):
         # Run the cell
         try:
             tree = ast.parse(cell)
-            exec(compile(tree, filename="<testing>", mode="exec"), self._test_ns)
+            exec(
+                compile(tree, filename="<testing>", mode="exec"), self._test_ns
+            )
         except AssertionError as e:
             _last_error = e
             return HTML(templ.assertion.render(error=e))
@@ -144,9 +152,13 @@ class TagCache(Magics):
             for tc in self._test_ns["nbtest_cases"]:
                 if isinstance(tc, str):
                     suite.addTest(loader.loadTestsFromName(tc))
-                elif isinstance(tc, unittest.TestCase) or isinstance(tc, unittest.TestSuite):
+                elif isinstance(tc, unittest.TestCase) or isinstance(
+                    tc, unittest.TestSuite
+                ):
                     suite.addTest(tc)
-                elif isinstance(tc, type) and issubclass(tc, unittest.TestCase):
+                elif isinstance(tc, type) and issubclass(
+                    tc, unittest.TestCase
+                ):
                     suite.addTest(loader.loadTestsFromTestCase(tc))
                 elif isinstance(tc, types.ModuleType):
                     suite.addTest(loader.loadTestsFromModule(tc))
@@ -161,19 +173,29 @@ class TagCache(Magics):
                 """Parse the input cell to find top level test class and test function defs"""
 
                 def visit_ClassDef(_, node):
-                    if isinstance(self._test_ns[node.name], type) and issubclass(
+                    if isinstance(
+                        self._test_ns[node.name], type
+                    ) and issubclass(
                         self._test_ns[node.name], unittest.TestCase
                     ):
-                        suite.addTest(loader.loadTestsFromTestCase(self._test_ns[node.name]))
+                        suite.addTest(
+                            loader.loadTestsFromTestCase(
+                                self._test_ns[node.name]
+                            )
+                        )
                     # do not descend
 
                 def visit_FunctionDef(_, node):
-                    if node.name.startswith("test") and callable(self._test_ns[node.name]):
+                    if node.name.startswith("test") and callable(
+                        self._test_ns[node.name]
+                    ):
                         suite.addTest(funct_testcase(self._test_ns[node.name]))
                     # do not descend
 
                 def visit_AsyncFunctionDef(_, node):
-                    if node.name.startswith("test") and callable(self._test_ns[node.name]):
+                    if node.name.startswith("test") and callable(
+                        self._test_ns[node.name]
+                    ):
                         suite.addTest(funct_testcase(self._test_ns[node.name]))
                     # do not descend
 
@@ -274,12 +296,16 @@ class TagCacheEntry(AnalysisNode):
     def ns(self) -> Mapping:
         return self._shell.user_ns
 
-    def run(self, push: Mapping = {}, capture: bool = True) -> Union[CellRunResult, None]:
+    def run(
+        self, push: Mapping = {}, capture: bool = True
+    ) -> Union[CellRunResult, None]:
         """
         Run the contents of a cached cell.
 
-        push: Update variables in the notebook namespace with names and values in `push` before running the contents.
-        capture: Set to `True` (the default) to capture stdout, stderr and output. If `False` run() returns `None`
+        push: Update variables in the notebook namespace with names and values
+            in `push` before running the contents.
+        capture: Set to `True` (the default) to capture stdout, stderr and
+            output. If `False` run() returns `None`
         """
         self._shell.push(push)
         try:
@@ -307,11 +333,15 @@ class TagCacheEntry(AnalysisNode):
                 sys.stdout = out
                 sys.stderr = err
                 sys.displayhook = implicit_displayhook
-                self._shell.user_ns["__builtins__"].display = explicit_displayhook
+                self._shell.user_ns[
+                    "__builtins__"
+                ].display = explicit_displayhook
 
             transformer = RewriteVariableAssignments(*list(push.keys()))
             self._shell.ast_transformers.append(transformer)
-            self._shell.run_cell(self.source, store_history=False, silent=False)
+            self._shell.run_cell(
+                self.source, store_history=False, silent=False
+            )
 
             if capture:
                 return CellRunResult(

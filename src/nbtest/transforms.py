@@ -35,6 +35,10 @@ class RewriteVariableAssignments(ast.NodeTransformer):
             return self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> ast.AST:
-        if self.rewrite and isinstance(node.ctx, ast.Store) and node.id in self.targets:
+        if (
+            self.rewrite
+            and isinstance(node.ctx, ast.Store)
+            and node.id in self.targets
+        ):
             node.id = "_"
         return node

@@ -18,7 +18,11 @@ except ImportError:
         if addSkip is not None:
             addSkip(test_case, reason)
         else:
-            warnings.warn("TestResult has no addSkip method, skips not reported", RuntimeWarning, 2)
+            warnings.warn(
+                "TestResult has no addSkip method, skips not reported",
+                RuntimeWarning,
+                2,
+            )
             result.addSuccess(test_case)
 
 
@@ -67,7 +71,8 @@ class NotebookResult(unittest.TestResult):
     def addError(
         self,
         test: unittest.TestCase,
-        err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
+        err: tuple[type[BaseException], BaseException, TracebackType]
+        | tuple[None, None, None],
     ) -> None:
         self.stop()
         self.errors.append(
@@ -80,7 +85,8 @@ class NotebookResult(unittest.TestResult):
     def addFailure(
         self,
         test: unittest.TestCase,
-        err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
+        err: tuple[type[BaseException], BaseException, TracebackType]
+        | tuple[None, None, None],
     ) -> None:
         self.stop()
         self.failures.append(
@@ -104,7 +110,8 @@ class NotebookResult(unittest.TestResult):
     def addExpectedFailure(
         self,
         test: unittest.TestCase,
-        err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
+        err: tuple[type[BaseException], BaseException, TracebackType]
+        | tuple[None, None, None],
     ) -> None:
         self.expectedFailures.append(
             self._format_test_name(test),
@@ -127,9 +134,7 @@ class NotebookResult(unittest.TestResult):
         if desc is not None:
             return desc.strip()
 
-        default_message = (
-            """The function <span style="font-family: monospace">{}()</span> reported an error."""
-        )
+        default_message = """The function <span style="font-family: monospace">{}()</span> reported an error."""
 
         if test.__class__ == unittest.TestCase:
             return default_message.format(".".join(test.id().split(".")[-2:]))
@@ -138,7 +143,8 @@ class NotebookResult(unittest.TestResult):
 
     def _format_error(
         self,
-        err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None],
+        err: tuple[type[BaseException], BaseException, TracebackType]
+        | tuple[None, None, None],
     ) -> str:
         if not issubclass(err[0], AssertionError):
             return f"""{err[0].__name__}: {err[1]}"""
@@ -178,8 +184,9 @@ async def generic_async_run(self, result):
     An async version of TestCase.run() defined here:
         https://github.com/python/cpython/blob/main/Lib/unittest/case.py
 
-    As Jason Fried said, "The best solution is to provide an entire async call chain from
-    their code to your code and maintain a separate blocking chain that used to exist."
+    As Jason Fried said, "The best solution is to provide an entire async call
+    chain from their code to your code and maintain a separate blocking chain
+    that used to exist."
 
         https://youtu.be/XW7yv6HuWTE?si=0SV9ISfL2qUH11F7
 
@@ -201,15 +208,15 @@ async def generic_async_run(self, result):
             testMethod, "__unittest_skip__", False
         ):
             # If the class or method was skipped.
-            skip_why = getattr(self.__class__, "__unittest_skip_why__", "") or getattr(
-                testMethod, "__unittest_skip_why__", ""
-            )
+            skip_why = getattr(
+                self.__class__, "__unittest_skip_why__", ""
+            ) or getattr(testMethod, "__unittest_skip_why__", "")
             _addSkip(result, self, skip_why)
             return result
 
-        expecting_failure = getattr(self, "__unittest_expecting_failure__", False) or getattr(
-            testMethod, "__unittest_expecting_failure__", False
-        )
+        expecting_failure = getattr(
+            self, "__unittest_expecting_failure__", False
+        ) or getattr(testMethod, "__unittest_expecting_failure__", False)
         outcome = _Outcome(result)
         start_time = time.perf_counter()
         try:
@@ -235,7 +242,9 @@ async def generic_async_run(self, result):
             if outcome.success:
                 if expecting_failure:
                     if outcome.expectedFailure:
-                        self._addExpectedFailure(result, outcome.expectedFailure)
+                        self._addExpectedFailure(
+                            result, outcome.expectedFailure
+                        )
                     else:
                         self._addUnexpectedSuccess(result)
                 else:

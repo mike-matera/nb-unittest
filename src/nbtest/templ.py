@@ -9,7 +9,9 @@ class _Templates:
     """Manage templates used by nbtest."""
 
     def __init__(self):
-        self.env = Environment(loader=PackageLoader("nbtest"), autoescape=select_autoescape())
+        self.env = Environment(
+            loader=PackageLoader("nbtest"), autoescape=select_autoescape()
+        )
 
     def _load(self, value):
         if isinstance(value, Template):

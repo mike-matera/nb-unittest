@@ -1,6 +1,7 @@
 """
-An IPython plugin that make it possible to write clear, concise and safe unit tests for student code.
-Tests run in a context that's protected from common student errors.
+An IPython plugin that make it possible to write clear, concise and safe unit
+tests for student code. Tests run in a context that's protected from common
+student errors.
 """
 
 import unittest
@@ -26,7 +27,10 @@ __all__ = [
 
 
 def get(tag: str) -> tagcache.TagCacheEntry:
-    """Retrieve cell information by the tag name. Tag names should include the @ symbol."""
+    """
+    Retrieve cell information by the tag name. Tag names should include
+    the @ symbol.
+    """
     if _cache is None:
         raise RuntimeError("The nbtest extension has not been loaded.")
     return _cache._cache[tag]
@@ -59,7 +63,9 @@ def _severity(level: str):
 
 
 warning = _severity("warning")
-warning.__doc__ = """A decorator for test functions that marks a failure as a warning."""
+warning.__doc__ = (
+    """A decorator for test functions that marks a failure as a warning."""
+)
 
 error = _severity("error")
 error.__doc__ = """A decorator for test functions that marks a failure as an error (the default)."""

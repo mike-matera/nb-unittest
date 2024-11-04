@@ -18,8 +18,8 @@ class AnalysisNode:
         Create an analysis node with optional source code.
 
         source: Source code.
-        tree: The parse tree or subtree corresponding to the source. If tree is None it will be
-            generated using ast.parse(source)
+        tree: The parse tree or subtree corresponding to the source. If tree is
+            None it will be generated using ast.parse(source)
         """
 
         self._source = source
@@ -30,8 +30,8 @@ class AnalysisNode:
     @property
     def source(self) -> str:
         """
-        The source corresponding to the tokens in tree. If this node is a subtree only the source
-        corresponding to the subtree is returned.
+        The source corresponding to the tokens in tree. If this node is a
+        subtree only the source corresponding to the subtree is returned.
         """
         src = ast.get_source_segment(self._source, self._tree)
         if src is None:
@@ -41,7 +41,10 @@ class AnalysisNode:
 
     @property
     def tree(self) -> ast.Module:
-        """A deep copy of the parse tree or subtree that corresponding to this node."""
+        """
+        A deep copy of the parse tree or subtree that corresponding to this
+        node.
+        """
         if self._tree.__class__ == MarkerNode:
             # Don't show users my fake node.
             return copy.deepcopy(self._tree._real_node)
@@ -72,18 +75,22 @@ class AnalysisNode:
                 node.body = []
                 return node
 
-        return set((x.__class__ for x in ast.walk(RootExtractor().visit(self.tree))))
+        return set(
+            (x.__class__ for x in ast.walk(RootExtractor().visit(self.tree)))
+        )
 
     @property
     def functions(self) -> dict[str, types.FunctionType]:
         """
-        A dictionary of the names of defined functions and their corresponding AnalysisNode.
+        A dictionary of the names of defined functions and their corresponding
+        AnalysisNode.
         """
         found = {}
 
         class FindFunctions(RootNodeFinder):
             """
-            A visitor that finds function definitions at the top level of the tree.
+            A visitor that finds function definitions at the top level of the
+            tree.
             """
 
             def visit_FunctionDef(_, node: ast.FunctionDef):
@@ -99,7 +106,8 @@ class AnalysisNode:
     @property
     def classes(self) -> dict[str, type]:
         """
-        A dictionary of the names of defined classes and their corresponding AnalysisNode.
+        A dictionary of the names of defined classes and their corresponding
+        AnalysisNode.
         """
         found = {}
 
@@ -157,7 +165,11 @@ class AnalysisNode:
 
         class FindCalls(RootNodeFinder):
             def visit_Call(self, node: ast.Call):
-                found.append(node.func.id if hasattr(node.func, "id") else node.func.attr)
+                found.append(
+                    node.func.id
+                    if hasattr(node.func, "id")
+                    else node.func.attr
+                )
                 self.generic_visit(node)
 
         finder = FindCalls()
@@ -167,7 +179,8 @@ class AnalysisNode:
     @property
     def arguments(self) -> set[str]:
         """
-        If the current node is a function definition, the list of argument names in definition order.
+        If the current node is a function definition, the list of argument
+        names in definition order.
         """
         found = []
 
@@ -192,9 +205,9 @@ class AnalysisNode:
 
 class MarkerNode(ast.AST):
     """
-    A fake Module node to use as the root of a tree that is rooted on a ast.Class or ast.Function
-    node. Using this as the root makes the visitors that refuse to descend into function or
-    class definitions just work.
+    A fake Module node to use as the root of a tree that is rooted on a
+    ast.Class or ast.Function node. Using this as the root makes the visitors
+    that refuse to descend into function or class definitions just work.
     """
 
     def __init__(self, root: ast.AST):
