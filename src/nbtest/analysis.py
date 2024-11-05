@@ -141,6 +141,24 @@ class AnalysisNode:
         return set(found)
 
     @property
+    def references(self) -> set[str]:
+        """
+        The set of the names of referenced attributes in this node. References
+        are context loads, not stores. Assignments do not count as references.
+        """
+        found = []
+
+        class FindAllNames(RootNodeFinder):
+            def visit_Name(self, node: ast.Name):
+                if isinstance(node.ctx, ast.Load):
+                    found.append(node.id)
+                self.generic_visit(node)
+
+        finder = FindAllNames()
+        finder.visit(self._tree)
+        return set(found)
+
+    @property
     def constants(self) -> set[typing.Any]:
         """
         The set of all literal values in this node.
