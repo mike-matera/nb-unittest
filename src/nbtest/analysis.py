@@ -123,11 +123,7 @@ class AnalysisNode:
         finder.visit(self._tree)
         return found
 
-    @property
-    def assignments(self) -> set[str]:
-        """
-        The set of the names of assigned variables in this node.
-        """
+    def _assignments(self) -> list[str]:
         found = []
 
         class FindAssignments(RootNodeFinder):
@@ -138,14 +134,22 @@ class AnalysisNode:
 
         finder = FindAssignments()
         finder.visit(self._tree)
-        return set(found)
+        return found
 
     @property
-    def references(self) -> set[str]:
+    def assignments(self) -> set[str]:
         """
-        The set of the names of referenced attributes in this node. References
-        are context loads, not stores. Assignments do not count as references.
+        The set of the names of assigned variables in this node.
         """
+        return set(self._assignments())
+
+    def count_assignments(self, name) -> set[str]:
+        """
+        Count the number of times the variable `name` is assigned.
+        """
+        return self._assignments().count(name)
+
+    def _references(self) -> list[str]:
         found = []
 
         class FindAllNames(RootNodeFinder):
@@ -156,7 +160,21 @@ class AnalysisNode:
 
         finder = FindAllNames()
         finder.visit(self._tree)
-        return set(found)
+        return found
+
+    @property
+    def references(self) -> set[str]:
+        """
+        The set of the names of referenced attributes in this node. References
+        are context loads, not stores. Assignments do not count as references.
+        """
+        return set(self._references())
+
+    def count_references(self, name) -> set[str]:
+        """
+        Count the number of times the symbol `name` is referenced.
+        """
+        return self._references().count(name)
 
     @property
     def constants(self) -> set[typing.Any]:
@@ -174,8 +192,7 @@ class AnalysisNode:
         finder.visit(self._tree)
         return set(found)
 
-    @property
-    def calls(self) -> set[str]:
+    def _calls(self) -> list[str]:
         """
         The set of names of the functions called in this node.
         """
@@ -192,7 +209,20 @@ class AnalysisNode:
 
         finder = FindCalls()
         finder.visit(self._tree)
-        return set(found)
+        return found
+
+    @property
+    def calls(self) -> set[str]:
+        """
+        The set of names of the functions called in this node.
+        """
+        return set(self._calls())
+
+    def count_calls(self, name) -> set[str]:
+        """
+        Count the number of times the function `name` is called.
+        """
+        return self._calls().count(name)
 
     @property
     def arguments(self) -> set[str]:
