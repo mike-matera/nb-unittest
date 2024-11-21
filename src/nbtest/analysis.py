@@ -63,17 +63,32 @@ class AnalysisNode:
         """A set of token classes from the current scope."""
 
         class RootExtractor(ast.NodeTransformer):
-            def visit_ClassDef(self, node: ast.ClassDef):
-                node.body = []
+            def __init__(self):
+                self.depth = 0
+
+            def delete_body(self, node: ast.AST):
+                if self.depth == 0:
+                    self.depth += 1
+                    self.generic_visit(node)
+                    self.depth -= 1
+                else:
+                    node.body = []
                 return node
+
+            def visit_Module(self, node):
+                self.depth += 1
+                self.generic_visit(node)
+                self.depth = -1
+                return node
+
+            def visit_ClassDef(self, node: ast.ClassDef):
+                return self.delete_body(node)
 
             def visit_FunctionDef(self, node: ast.FunctionDef):
-                node.body = []
-                return node
+                return self.delete_body(node)
 
             def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-                node.body = []
-                return node
+                return self.delete_body(node)
 
         return set(
             (x.__class__ for x in ast.walk(RootExtractor().visit(self.tree)))
