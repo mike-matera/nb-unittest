@@ -265,6 +265,32 @@ class AnalysisNode:
 
         return found
 
+    @property
+    def imports(self) -> set[str]:
+        """
+        The set of modules imported in this node. Entries have the true module
+        name, not the alias given with an "as", or a single attribute was imported
+        with "from." For example, all of these are equivalent an report "foo" as
+        the import:
+
+        import foo
+        import foo as bar
+        from foo import bak
+        """
+        found = []
+
+        class FindImports(RootNodeFinder):
+            def visit_Import(self, node: ast.Call):
+                nonlocal found
+                found += [alias.name for alias in node.names]
+
+            def visit_ImportFrom(self, node: ast.Call):
+                found.append(node.module)
+
+        finder = FindImports()
+        finder.visit(self._tree)
+        return set(found)
+
 
 class MarkerNode(ast.AST):
     """
