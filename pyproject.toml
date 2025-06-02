@@ -3,7 +3,7 @@ name = "nbtest"
 authors = [
     {name = "Mike Matera", email = "michael.matera@cabrillo.edu"},
 ]
-version = "0.13.0"
+version = "1.0.0"
 requires-python = ">= 3.10"
 dependencies = [
     "jinja2", 
