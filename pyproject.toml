@@ -3,13 +3,24 @@ name = "nb-unittest"
 authors = [
     {name = "Mike Matera", email = "michael.matera@cabrillo.edu"},
 ]
-version = "1.0.0"
+description = "Student centered unit tests embedded in the Jupyter Notebook"
+version = "1.0.1"
 requires-python = ">= 3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 dependencies = [
     "jinja2",
     "jupyterlab",
     "ipywidgets",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mike-matera/nb-unittest"
+Issues = "https://github.com/mike-matera/nb-unittest/issues"
 
 [tool.setuptools.package-data]
 "nb_unittest.templates" = ["*.html"]
