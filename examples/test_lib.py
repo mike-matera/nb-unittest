@@ -4,7 +4,7 @@ Importable test cases for nbtest
 
 import unittest
 
-from nbtest import nbtest_attrs
+from nb_unittest import nbtest_attrs
 
 
 class ATestCase(unittest.TestCase):

@@ -1,22 +1,27 @@
 [project]
-name = "nbtest"
+name = "nb-unittest"
 authors = [
     {name = "Mike Matera", email = "michael.matera@cabrillo.edu"},
 ]
 version = "1.0.0"
 requires-python = ">= 3.10"
 dependencies = [
-    "jinja2", 
+    "jinja2",
     "jupyterlab",
     "ipywidgets",
 ]
 
 [tool.setuptools.package-data]
-"nbtest.templates" = ["*.html"]
+"nb_unittest.templates" = ["*.html"]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "nbconvert>=7.16.6",
+]
 
 [tool.ruff]
 line-length = 79

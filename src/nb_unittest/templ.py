@@ -10,7 +10,7 @@ class _Templates:
 
     def __init__(self):
         self.env = Environment(
-            loader=PackageLoader("nbtest"), autoescape=select_autoescape()
+            loader=PackageLoader("nb_unittest"), autoescape=select_autoescape()
         )
 
     def _load(self, value):
