@@ -4,7 +4,7 @@ authors = [
     {name = "Mike Matera", email = "michael.matera@cabrillo.edu"},
 ]
 description = "Student centered unit tests embedded in the Jupyter Notebook"
-version = "1.0.2"
+version = "1.0.3"
 requires-python = ">= 3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
