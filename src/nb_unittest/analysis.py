@@ -4,8 +4,6 @@ Helpers that analyze code cells.
 
 import ast
 import copy
-import types
-import typing
 
 
 class AnalysisNode:
@@ -52,14 +50,14 @@ class AnalysisNode:
             return copy.deepcopy(self._tree)
 
     @property
-    def docstring(self) -> typing.Union[str, None]:
+    def docstring(self) -> str | None:
         """The docstring of this node. `None` if there is no docstring."""
         if self._tree.__class__ == MarkerNode:
             return ast.get_docstring(self._tree._real_node)
         return ast.get_docstring(self._tree)
 
     @property
-    def tokens(self) -> set:
+    def tokens(self) -> set[type]:
         """A set of token classes from the current scope."""
 
         class RootExtractor(ast.NodeTransformer):
@@ -95,7 +93,7 @@ class AnalysisNode:
         )
 
     @property
-    def functions(self) -> dict[str, types.FunctionType]:
+    def functions(self) -> dict[str, "AnalysisNode"]:
         """
         A dictionary of the names of defined functions and their corresponding
         AnalysisNode.
@@ -158,7 +156,7 @@ class AnalysisNode:
         """
         return set(self._assignments())
 
-    def count_assignments(self, name) -> set[str]:
+    def count_assignments(self, name) -> int:
         """
         Count the number of times the variable `name` is assigned.
         """
@@ -185,14 +183,16 @@ class AnalysisNode:
         """
         return set(self._references())
 
-    def count_references(self, name) -> set[str]:
+    def count_references(self, name) -> int:
         """
         Count the number of times the symbol `name` is referenced.
         """
         return self._references().count(name)
 
     @property
-    def constants(self) -> set[typing.Any]:
+    def constants(
+        self,
+    ) -> set[str | bytes | int | float | complex | bool | None]:
         """
         The set of all literal values in this node.
         """
@@ -233,7 +233,7 @@ class AnalysisNode:
         """
         return set(self._calls())
 
-    def count_calls(self, name) -> set[str]:
+    def count_calls(self, name) -> int:
         """
         Count the number of times the function `name` is called.
         """
